@@ -1,0 +1,107 @@
+vm                                                          = {
+    "js-ghrunner-useast-dev-test" = {
+        delete                                              = false
+        random_suffix                                       = true
+        description                                         = "Jump server to conenct to Private GKE standard cluster"
+        zone                                                = "us-east4-a"
+        project_id                                          = "prj-ghrunner-useast-dev-63055"
+        machine_type                                        = "e2-standard-4"
+        options  = {
+            allow_stopping_for_update                       = true
+            deletion_protection                             = false
+        }                 
+        can_ip_forward                                      = false
+        desired_status                                      = "RUNNING"
+        hostname                                            = null
+        labels                                              = {
+        }
+        metadata = {
+        }                  
+        min_cpu_platform                                    = null       
+        tags                                                = []
+        enable_display                                      = false
+        resource_policies                                   = []
+        key_revocation_action_type                          = ""
+        boot_disk                                           = {
+            auto_delete                                     = false
+            device_name                                     = ""
+            mode                                            = "READ_WRITE"
+            disk_encryption_key_raw                         = ""
+            kms_key_self_link                               = null
+            source                                          = null
+            initialize_params = {
+              image                                         = "projects/debian-cloud/global/images/family/debian-11"
+              size                                          = null
+              type                                          = null
+              labels  = {
+
+              }
+              resource_manager_tags = {
+
+              }
+              resource_policies                             = []
+              provisioned_iops                              = null
+              provisioned_throughput                        = null
+              enable_confidential_compute                   = false
+              storage_pool                                  = null
+            }
+        }
+        network_interface                                   = [{
+            network                                         = "projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"
+            subnetwork                                      = "projects/prj-shrd-ntwk-3/regions/us-east4/subnetworks/sn-ue4-gke-ghrunner-dev-1"
+            subnetwork_project                              = "prj-shrd-ntwk-3"
+            network_ip                                      = ""
+            nic_type                                        = null
+            stack_type                                      = ""
+            queue_count                                     = 0
+            access_config = {
+              nat_ip                                        = ""
+              network_tier                                  = ""
+              public_ptr_domain_name                        = ""
+            }
+            alias_ip_range = {
+            }
+            ipv6_access_config = {
+              external_ipv6                                 = null
+              external_ipv6_prefix_length                   = null
+              name                                          = null
+              network_tier                                  = ""
+              public_ptr_domain_name                        = ""
+            }
+        }]     
+        attached_disk                                       = null     
+        guest_accelerator                                   = null    
+        params                                              = null                
+        scratch_disk                                        = {
+            interface                                       = "NVME"
+            count                                           = 0
+        }               
+        service_account                                     =  null 
+        shielded_config                                     = {
+            enable_secure_boot                              = false
+            enable_vtpm                                     = true
+            enable_integrity_monitoring                     = true
+        }
+        confidential_instance_config                        = null
+        advanced_machine_features                           =  {
+            enable_nested_virtualization                    = false
+            threads_per_core                                = 1
+            turbo_mode                                      = null
+            visible_core_count                              = 0
+            performance_monitoring_unit                     = null
+            enable_uefi_networking                          = false
+        }
+        scheduling                                          =  null /* {
+            automatic_restart                               = true
+            availability_domain                             = 0
+            instance_termination_action                     = null
+            local_ssd_recovery_timeout                      = null
+            max_run_duration                                = null
+            min_node_cpus                                   = 0
+            on_host_maintenance                             = "MIGRATE"
+            on_instance_stop_action                         = null
+            preemptible                                     = false
+            provisioning_model                              = "STANDARD"
+        }  */       
+    } 
+}

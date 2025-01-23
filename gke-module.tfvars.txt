@@ -1,0 +1,194 @@
+cluster = {
+  "cluster1" = {
+            delete             = false
+            name               = "gke-ghrunner-useast-dev"
+            location           = "us-east4"  
+            deletion_protection = false
+            node_locations      = ["us-east4-a","us-east4-b","us-east4-c"]
+            addons_config       = []
+            random_suffix       = true
+            network             = "projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"
+            subnetwork          = "projects/prj-shrd-ntwk-3/regions/us-east4/subnetworks/sn-ue4-gke-ghrunner-dev-1"
+            allow_net_admin     = false 
+            cluster_ipv4_cidr   = null  
+            datapath_provider   = "LEGACY_DATAPATH"
+            project_id          = "prj-ghrunner-useast-dev-63055"
+            node_pool_defaults = []
+            release_channel     = [
+            /*  {
+                channel = "UNSPECIFIED"
+              }*/
+            ]
+            gateway_api_config  = []
+            cost_management_config  = [
+              {
+                enabled = false
+              }
+            ]
+            resource_usage_export_config = []
+            confidential_nodes      = [
+              {
+                enabled = false
+              }
+            ]
+            default_snat_status     = [
+                {
+                disabled = false
+                }
+            ]
+           cluster_autoscaling     = []
+            binary_authorization    = [
+              {
+                enabled = false
+                evaluation_mode = "DISABLED"
+              }
+            ]
+            identity_service_config = [ {
+                enabled = false
+            }
+            ]
+            ip_allocation_policy  = [
+              {
+            cluster_secondary_range_name = "sipr-ue4-ghrunnerpod-dev-1"
+            services_secondary_range_name = "sipr-ue4-ghrunnerserv-dev-2"
+            services_ipv4_cidr_block = null
+            cluster_ipv4_cidr_block = null
+            stack_type = null
+            additional_pod_ranges_config =  []
+              }
+            ]
+            maintenance_policy = []
+            default_max_pods_per_node = null
+            enable_k8s_beta_apis = []
+            enable_tpu = false
+            enable_legacy_abac = false
+            enable_shielded_nodes = true  
+            enable_kubernetes_alpha = false
+            networking_mode = "VPC_NATIVE"
+            resource_labels ={
+            }
+            enable_intranode_visibility = null  
+            enable_l4_ilb_subsetting = false
+            enable_multi_networking = false
+            private_ipv6_google_access = null
+            enable_cilium_clusterwide_network_policy = false
+            remove_default_node_pool = true     
+            logging_service  = null
+            monitoring_service = null      
+            initial_node_count = 1
+              node_pool_auto_config = [ 
+                  {  
+                    resource_manager_tags = null
+                        network_tags = []
+                        node_kubelet_config = [{
+                        insecure_kubelet_readonly_port_enabled = "FALSE"
+                    } ] 
+                    }
+                  ]
+            master_auth = [ {
+              client_certificate_config = [ {
+                issue_client_certificate = false
+              }
+              ]
+            }
+            ]
+            logging_config = [ {
+              enable_components = ["WORKLOADS","SYSTEM_COMPONENTS"]
+            }
+            ]
+            monitoring_config = []
+            security_posture_config = [ {
+                mode               = "BASIC"
+                vulnerability_mode = "VULNERABILITY_BASIC"
+            }
+            ]
+            vertical_pod_autoscaling = [ {
+              enabled = false      
+            }
+            ]
+            fleet = []
+            service_external_ips_config = [ {
+              enabled = false
+            }
+            ]
+            mesh_certificates = [ {
+              enable_certificates = false
+            }
+            ]
+
+            database_encryption = [ {
+              state = "DECRYPTED"
+              key_name = null
+            }
+            ]
+            
+            dns_config = [ {
+              additive_vpc_scope_dns_domain  = null
+              cluster_dns = "PROVIDER_UNSPECIFIED"
+              cluster_dns_scope =  "DNS_SCOPE_UNSPECIFIED"
+              cluster_dns_domain =  null
+        
+            }
+            ]
+
+            master_authorized_networks_config = [ {
+                cidr_blocks = [  {
+                  cidr_block  = "10.0.0.0/8"
+                  display_name  = "master_authorized_network"
+                  private_endpoint_enforcement_enabled = false
+                },
+                {
+                  cidr_block  = "10.141.129.15/32"
+                  display_name  = "master_authorized_network-2"
+                  private_endpoint_enforcement_enabled = false
+                }
+                ]
+                gcp_public_cidrs_access_enabled = false
+                }
+           ]
+            recurring_window = [ {
+              start_time = null
+              end_time   = null
+              recurrence = null
+            }
+            ]
+
+            daily_maintenance_window = [ {
+              start_time = null
+            }
+            ]
+
+            maintenance_exclusion = [ {
+	            exclusion_name = null
+              start_time     = null
+              end_time       = null
+              
+              exclusion_options = [ {
+                    scope = null
+              }
+                    ]
+            }
+            ]
+
+            network_policy = []
+            node_pool = []
+            notification_config = []
+            workload_identity_config = [ {
+          	  workload_pool = "prj-ghrunner-useast-dev-63055.svc.id.goog"
+            }
+            ]
+            private_cluster_config = [ {
+              enable_private_nodes = true
+              enable_private_endpoint = true
+              master_ipv4_cidr_block = "10.141.129.0/24"
+              private_endpoint_subnetwork = "sn-ue4-gke-ghrunner-dev-1"
+              master_global_access_config = [{
+                enabled = true
+              }
+              ]
+   } ]
+              
+            authenticator_groups_config   = []
+            node_config  = []
+  }
+}
