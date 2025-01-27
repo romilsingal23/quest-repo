@@ -1,67 +1,48 @@
-name: Historical Data Migration - Snowflake to BigQuery
+# Step 1: Checkout code
+- name: Checkout Repository
+  uses: actions/checkout@v3
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # For manual triggers
-
-jobs:
-  historical-data-migration:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Step 1: Checkout code
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      # Step 2: Set up gcloud CLI
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          export_default_credentials: true
-
-      # Step 3: Upload DAGs and config files to Composer bucket
-      - name: Upload DAG to Composer
-        run: |
-          gsutil cp DAG/qaw_snowflake_to_bq_hist_payor.py gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags
-          gsutil cp DAG/dag_configs/Dev/config/qaw/qaw_snowflake_to_bq_hist_payor_config.yaml gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags/config/qaw/
-          gsutil cp DAG/dag_configs/Dev/config/qaw/qaw_snowflake_to_bq_hist_payor.sql gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags/sql/
-
-      # Step 4: Trigger Composer DAG
-      - name: Trigger Composer DAG
-        run: |
-          gcloud composer environments run us-east4-eda-composer-dev-1 \
-          --location us-east4 dags trigger -- qaw_snowflake_to_bq_hist_payor
-      - name: Run Python Script to Create BigQuery Table
+# Step 2: Set up Python
+- name: Set up Python
   uses: actions/setup-python@v4
   with:
     python-version: "3.9"
-- run: |
-    pip install google-cloud-bigquery
-    python create_bq_table.py
-  env:
-    GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
-      # Step 5: Run Dataflow Job
-      - name: Run Dataflow Job
-        run: |
-          python qaw_snowflake_to_bq_laborder_df_test.py \
-            --runner=DataflowRunner \
-            --job_name=qaw-snowflake-to-bq-hist-payor-test \
-            --project=prj-eda-qadp-raw-dev-48699 \
-            --region=us-east4 \
-            --temp_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/dataflow/qaw-snowflake-to-bq-dataflow-job/temp \
-            --staging_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/dataflow/qaw-snowflake-to-bq-dataflow-job/staging \
-            --subnetwork=https://www.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/regions/us-east4/subnetworks/sub-non-prod-psa-ue4 \
-            --no_use_public_ips \
-            --input_data_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/source/snowflake/historical/lab_ordr_rslt_dgns_0_0_0.snappy.parquet \
-            --labels=appserviceid=snsvc123456 \
-            --labels=appservicename=google_cloud_platform \
-            --labels=timestamp=resource_creation_time \
-            --labels=iac=terraform \
-            --labels=datatype=blank \
-            --labels=tierid=tier-1 \
-            --service_account_email=qadp-raw-dataflow-dev@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com
+# Step 3: Set up gcloud CLI
+- name: Set up gcloud CLI
+  uses: google-github-actions/setup-gcloud@v1
+  with:
+    project_id: ${{ secrets.GCP_PROJECT_ID }}
+    service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+    export_default_credentials: true
+
+# Step 4: Upload DAG to Composer
+- name: Upload DAG to Composer
+  run: |
+    gsutil cp DAG/qaw_snowflake_to_bq_hist_payor.py gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags
+    gsutil cp DAG/dag_configs/Dev/config/qaw/qaw_snowflake_to_bq_hist_payor_config.yaml gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags/config/qaw/
+    gsutil cp DAG/dag_configs/Dev/config/qaw/qaw_snowflake_to_bq_hist_payor.sql gs://us-east4-eda-composer-dev-1-75d1f50e-bucket/dags/sql/
+
+# Step 5: Trigger Composer DAG (Removed)
+
+# Step 6: Run Dataflow Job
+- name: Install Dependencies and Run Dataflow Job
+  run: |
+    pip install apache-beam google-cloud-storage
+    python qaw_snowflake_to_bq_laborder_df_test.py \
+      --runner=DataflowRunner \
+      --job_name=qaw-snowflake-to-bq-hist-payor-test \
+      --project=prj-eda-qadp-raw-dev-48699 \
+      --region=us-east4 \
+      --temp_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/dataflow/qaw-snowflake-to-bq-dataflow-job/temp \
+      --staging_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/dataflow/qaw-snowflake-to-bq-dataflow-job/staging \
+      --subnetwork=https://www.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/regions/us-east4/subnetworks/sub-non-prod-psa-ue4 \
+      --no_use_public_ips \
+      --input_data_location=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/source/snowflake/historical/lab_ordr_rslt_dgns_0_0_0.snappy.parquet \
+      --labels=appserviceid=snsvc123456 \
+      --labels=appservicename=google_cloud_platform \
+      --labels=timestamp=resource_creation_time \
+      --labels=iac=terraform \
+      --labels=datatype=blank \
+      --labels=tierid=tier-1 \
+      --service_account_email=qadp-raw-dataflow-dev@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com
