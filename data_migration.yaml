@@ -1,45 +1,62 @@
 name: Data Migration
 
-on: push: branches: - main workflow_dispatch: inputs: environment: description: 'Select Environment (dev/prod)' required: true default: 'dev' type: choice options: - dev - prod
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select Environment (dev/prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
-jobs: copy-composer-dag: runs-on: ubuntu-latest permissions: id-token: 'write' contents: 'read'
+jobs:
+  copy-composer-dag:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: 'write'
+      contents: 'read'
 
-steps:
-  # Checkout Repository
-  - name: Checkout Repository
-    uses: actions/checkout@v4
+    steps:
+      # Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  # Set Environment Variables
-  - name: Set Environment Variables
-    run: |
-      if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
-        echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
-        echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-        echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-        echo "GCS_BUCKET=gs://prod-composer-bucket/dags/" >> $GITHUB_ENV
-      else
-        echo "PROJECT_ID=prj-dev-67236" >> $GITHUB_ENV
-        echo "SERVICE_ACCOUNT=sa-composer-dev@prj-dev-67236.iam.gserviceaccount.com" >> $GITHUB_ENV
-        echo "WORKLOAD_IDENTITY_PROVIDER=projects/1046068350740/locations/global/workloadIdentityPools/wif-dev/providers/wif-provider" >> $GITHUB_ENV
-        echo "GCS_BUCKET=gs://dev-composer-bucket/dags/" >> $GITHUB_ENV
-      fi
+      # Set Environment Variables
+      - name: Set Environment Variables
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
+            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://prod-composer-bucket/dags/" >> $GITHUB_ENV
+          else
+            echo "PROJECT_ID=prj-dev-67236" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-composer-dev@prj-dev-67236.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/1046068350740/locations/global/workloadIdentityPools/wif-dev/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://dev-composer-bucket/dags/" >> $GITHUB_ENV
+          fi
 
-  # Google Authentication
-  - name: Google Authentication
-    id: auth
-    uses: google-github-actions/auth@v2
-    with:
-      project_id: "${{ env.PROJECT_ID }}"
-      service_account: "${{ env.SERVICE_ACCOUNT }}"
-      workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
+      # Google Authentication
+      - name: Google Authentication
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "${{ env.PROJECT_ID }}"
+          service_account: "${{ env.SERVICE_ACCOUNT }}"
+          workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
 
-  # Install Google Cloud SDK
-  - name: Install gcloud CLI
-    run: |
-      sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+      # Install Google Cloud SDK
+      - name: Install gcloud CLI
+        run: |
+          sudo apt-get update && sudo apt-get install -y google-cloud-sdk
 
-  # Copy DAGs to GCS
-  - name: Copy Composer DAGs to GCS
-    run: |
-      gsutil -m cp -r dags/ ${{ env.GCS_BUCKET }}
-
+      # Copy DAGs to GCS
+      - name: Copy Composer DAGs to GCS
+        run: |
+          gsutil -m cp -r dags/ ${{ env.GCS_BUCKET }}
