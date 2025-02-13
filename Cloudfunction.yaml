@@ -1,0 +1,56 @@
+name: Deploy GCP Cloud Functions and Pub/Sub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        function: 
+          - { name: "payor", topic: "qaw-snowflake-to-bq-payor-topic" }
+          - { name: "healthsystem", topic: "qaw-snowflake-to-bq-healthsystem-topic" }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: prj-eda-qadp-raw-dev-48699
+
+      - name: Create Pub/Sub topic
+        run: |
+          gcloud pubsub topics create "${{ matrix.function.topic }}" --quiet || echo "Topic already exists"
+
+      - name: Configure Cloud Storage notification
+        run: |
+          gsutil notification create -f json -t "projects/prj-eda-qadp-raw-dev-48699/topics/${{ matrix.function.topic }}" \
+            -e OBJECT_FINALIZE -p "source/snowflake/incremental/${{ matrix.function.name }}" \
+            gs://gcs-duse4usw1-eda-qadp-raw-dev-48699
+
+      - name: Deploy Cloud Function
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%S")
+
+          gcloud functions deploy "qaw_snowflake_to_bq_inc_${{ matrix.function.name }}_filewatcher" \
+            --gen2 \
+            --region=us-east4 \
+            --runtime=python312 \
+            --source="gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/cloud_functions/qaw_snowflake_to_bq_inc_${{ matrix.function.name }}_filewatcher.zip" \
+            --entry-point=main \
+            --trigger-topic="${{ matrix.function.topic }}" \
+            --no-allow-unauthenticated \
+            --ingress-settings=internal-only \
+            --run-service-account="sa-use4-qadp-raw-dev-48699@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" \
+            --update-env-vars PROJECT_ID=prj-eda-qadp-raw-dev-48699,COMPOSER_TRIGGER_URL="https://10957b56d816438e9abf932087afa40-east4.composer.googleusercontent.com",TARGET_DAG="qaw_snowflake_to_bq_inc_${{ matrix.function.name }}",SOURCE_BUCKET="gcs-duse4usw1-eda-qadp-raw-dev-48699",SOURCE_FOLDER="source/snowflake/incremental/" \
+            --update-labels="appserviceid=snsvc0005368,appservicename=google-cloud-platform-development,costcenter=ttd,datatype=goog-terraform,provisioned=true,iac=terraform,tierid=tier-1,timestamp=$TIMESTAMP"
