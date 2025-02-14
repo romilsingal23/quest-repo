@@ -5,32 +5,38 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: 'write'
+  contents: 'read'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        function: 
-          - { name: "payor", topic: "qaw-snowflake-to-bq-payor-topic" }
-          - { name: "healthsystem", topic: "qaw-snowflake-to-bq-healthsystem-topic" }
+        function: [' { name: "payor", topic: "qaw-snowflake-to-bq-payor-topic" }', '{ name: "healthsystem", topic: "qaw-snowflake-to-bq-healthsystem-topic" }']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: qaw_milestone_4
 
-      - name: Authenticate with Google Cloud
+      - name: Google Authentication
+        id: auth
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: 'prj-eda-qadp-raw-dev-48699'
+          service_account: 'sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com'
+          workload_identity_provider: 'projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider'
 
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: prj-eda-qadp-raw-dev-48699
-
+        
       - name: Create Pub/Sub topic
         run: |
-          gcloud pubsub topics create "${{ matrix.function.topic }}" --quiet || echo "Topic already exists"
+          echo "Topic: ${{ matrix.function['topic'] }}"
+          gcloud pubsub topics create "${{ matrix.function.topic }}" --project=prj-eda-qadp-raw-dev-48699 --quiet || echo "Topic already exists"
 
       - name: Configure Cloud Storage notification
         run: |
@@ -51,6 +57,6 @@ jobs:
             --trigger-topic="${{ matrix.function.topic }}" \
             --no-allow-unauthenticated \
             --ingress-settings=internal-only \
-            --run-service-account="sa-use4-qadp-raw-dev-48699@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" \
+            --run-service-account="sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" \
             --update-env-vars PROJECT_ID=prj-eda-qadp-raw-dev-48699,COMPOSER_TRIGGER_URL="https://10957b56d816438e9abf932087afa40-east4.composer.googleusercontent.com",TARGET_DAG="qaw_snowflake_to_bq_inc_${{ matrix.function.name }}",SOURCE_BUCKET="gcs-duse4usw1-eda-qadp-raw-dev-48699",SOURCE_FOLDER="source/snowflake/incremental/" \
             --update-labels="appserviceid=snsvc0005368,appservicename=google-cloud-platform-development,costcenter=ttd,datatype=goog-terraform,provisioned=true,iac=terraform,tierid=tier-1,timestamp=$TIMESTAMP"
