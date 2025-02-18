@@ -52,7 +52,6 @@ jobs:
             echo "WORKLOAD_IDENTITY_PROVIDER=projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
             echo "GCS_BUCKET=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
             echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-            
           fi
   
       - name: Google Authentication
@@ -73,9 +72,16 @@ jobs:
 
       - name: Configure Cloud Storage notification
         run: |
-          gsutil notification create -f json -t "projects/${{ env.PROJECT_ID }}/topics/${{ matrix.function.topic }}" \
-            -e OBJECT_FINALIZE -p "source/snowflake/incremental/${{ matrix.function.name }}" \
-            "${{ env.GCS_BUCKET }}"
+          EXISTING_NOTIFICATIONS=$(gsutil notification list "${{ env.GCS_BUCKET }}" | grep "projects/${{ env.PROJECT_ID }}/topics/${{ matrix.function.topic }}" || true)
+          
+          if [ -z "$EXISTING_NOTIFICATIONS" ]; then
+            echo "Creating new notification for topic: ${{ matrix.function.topic }}"
+            gsutil notification create -f json -t "projects/${{ env.PROJECT_ID }}/topics/${{ matrix.function.topic }}" \
+              -e OBJECT_FINALIZE -p "source/snowflake/incremental/${{ matrix.function.name }}" \
+              "${{ env.GCS_BUCKET }}"
+          else
+            echo "Notification already exists for topic: ${{ matrix.function.topic }}, skipping creation."
+          fi
 
       - name: Deploy Cloud Function
         run: |
