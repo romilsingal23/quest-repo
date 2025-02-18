@@ -19,48 +19,77 @@ jobs:
             topic: "qaw-snowflake-to-bq-payor-topic"
           - name: "healthsystem"
             topic: "qaw-snowflake-to-bq-healthsystem-topic"
-
+     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: qaw_milestone_4
 
+      - name: Set Environment Variables
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
+            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" == "test" ]; then
+            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" == "stage" ]; then
+            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          else
+            echo "PROJECT_ID=prj-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" >> $GITHUB_ENV
+            echo "WORKLOAD_IDENTITY_PROVIDER=projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
+            echo "GCS_BUCKET=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            
+          fi
+  
       - name: Google Authentication
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          project_id: 'prj-eda-qadp-raw-dev-48699'
-          service_account: 'sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com'
-          workload_identity_provider: 'projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider'
-
+          project_id: "${{ env.PROJECT_ID }}"
+          service_account: "${{ env.SERVICE_ACCOUNT }}"
+          workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
+      
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         
       - name: Create Pub/Sub topic
         run: |
-          echo "Topic: ${{ matrix.function['topic'] }}"
-          gcloud pubsub topics create "${{ matrix.function.topic }}" --project=prj-eda-qadp-raw-dev-48699 --quiet || echo "Topic already exists"
+          echo "Topic: ${{ matrix.function.name }}"
+          gcloud pubsub topics create "${{ matrix.function.topic }}" --quiet || echo "Topic already exists"
 
       - name: Configure Cloud Storage notification
         run: |
-          gsutil notification create -f json -t "projects/prj-eda-qadp-raw-dev-48699/topics/${{ matrix.function.topic }}" \
+          gsutil notification create -f json -t "projects/${{ env.PROJECT_ID }}/topics/${{ matrix.function.topic }}" \
             -e OBJECT_FINALIZE -p "source/snowflake/incremental/${{ matrix.function.name }}" \
-            gs://gcs-duse4usw1-eda-qadp-raw-dev-48699
+            "${{ env.GCS_BUCKET }}"
 
       - name: Deploy Cloud Function
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%S")
+          TIMESTAMP=$(date -u +"%Y-%m-%dt%H-%M-%S")
 
           gcloud functions deploy "qaw_snowflake_to_bq_inc_${{ matrix.function.name }}_filewatcher" \
             --gen2 \
             --region=us-east4 \
             --runtime=python312 \
-            --source="gs://gcs-duse4usw1-eda-qadp-raw-dev-48699/cloud_functions/qaw_snowflake_to_bq_inc_${{ matrix.function.name }}_filewatcher.zip" \
+            --source="${{ env.GCS_BUCKET }}/cloud_functions/qaw_snowflake_to_bq_inc_${{ matrix.function.name }}_filewatcher.zip" \
             --entry-point=main \
             --trigger-topic="${{ matrix.function.topic }}" \
             --no-allow-unauthenticated \
             --ingress-settings=internal-only \
-            --run-service-account="sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" \
-            --update-env-vars PROJECT_ID=prj-eda-qadp-raw-dev-48699,COMPOSER_TRIGGER_URL="https://10957b56d816438e9abf932087afa40-east4.composer.googleusercontent.com",TARGET_DAG="qaw_snowflake_to_bq_inc_${{ matrix.function.name }}",SOURCE_BUCKET="gcs-duse4usw1-eda-qadp-raw-dev-48699",SOURCE_FOLDER="source/snowflake/incremental/" \
+            --run-service-account="${{ env.SERVICE_ACCOUNT }}" \
+            --update-env-vars PROJECT_ID=${{ env.PROJECT_ID }},COMPOSER_TRIGGER_URL="https://10957b56d816438e9abf932087afa40-east4.composer.googleusercontent.com",TARGET_DAG="qaw_snowflake_to_bq_inc_${{ matrix.function.name }}",SOURCE_BUCKET="${{ env.GCS_BUCKET }}",SOURCE_FOLDER="source/snowflake/incremental/" \
             --update-labels="appserviceid=snsvc0005368,appservicename=google-cloud-platform-development,costcenter=ttd,datatype=goog-terraform,provisioned=true,iac=terraform,tierid=tier-1,timestamp=$TIMESTAMP"
