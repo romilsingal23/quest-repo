@@ -1,0 +1,86 @@
+name: Deploy Cloud SQL and DNS
+
+on:
+  push:
+    branches:
+      - main  # Adjust as needed
+
+permissions:
+  id-token: write  # Required for Workload Identity Federation
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Authenticate for Cloud SQL (Service Project)
+      - name: Authenticate with Google Cloud (Cloud SQL)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_SQL }}
+
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: prj-cus-qaw-dev-66576
+
+      - name: Create Cloud SQL Instance (Service Project)
+        run: |
+          gcloud sql instances create qaw-app-db-dev \
+            --project=prj-cus-qaw-dev-66576 \
+            --region=us-east4 \
+            --enable-private-service-connect \
+            --allowed-psc-projects=prj-shrd-ntwk-3 \
+            --availability-type=REGIONAL \
+            --no-assign-ip \
+            --tier=db-custom-2-7680 \
+            --database-version=POSTGRES_16 \
+            --edition=ENTERPRISE \
+            --psc-auto-connections=network-projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external \
+            --enable-password-policy \
+            --disk-encryption-key=projects/prj-key-mgt-dev-203834/locations/us-east4/keyRings/gadp/cryptoKeys/cloudsql \
+            --database-flags=cloudsql.enable_pgaudit=on \
+            --require-ssl
+
+      - name: Set Cloud SQL Password
+        run: |
+          gcloud sql users set-password postgres \
+            --instance=qaw-app-db-dev \
+            --password=${{ secrets.DB_PASSWORD }}
+
+      - name: Describe Cloud SQL Instance
+        run: |
+          gcloud sql instances describe qaw-app-db-dev \
+            --project=prj-cus-qaw-dev-66576 \
+            --format="json(settings.ipConfiguration.pscAutoConnections)"
+
+      # Authenticate for Shared VPC Project (Cloud DNS)
+      - name: Authenticate with Google Cloud (Cloud DNS)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_DNS }}
+
+      - name: Switch gcloud project to Shared VPC
+        run: gcloud config set project prj-shrd-ntwk-3
+
+      - name: Create Cloud DNS Managed Zone (Shared VPC Project)
+        run: |
+          gcloud dns managed-zones create qaw-app-db-dev-zone \
+            --project=prj-shrd-ntwk-3 \
+            --description="DNS zone for the Cloud SQL instance" \
+            --dns-name=qaw-app-db-dev.gcp.qdx.com. \
+            --networks=vpc-hub-external \
+            --visibility=private
+
+      - name: Create Cloud DNS Record (Shared VPC Project)
+        run: |
+          gcloud dns record-sets create qaw-app-db-dev.gcp.qdx.com. \
+            --project=prj-shrd-ntwk-3 \
+            --type=A \
+            --rrdatas=10.143.0.52
