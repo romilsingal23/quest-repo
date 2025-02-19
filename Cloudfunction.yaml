@@ -3,6 +3,15 @@ name: Deploy GCP Cloud Functions and Pub/Sub
 on:
   push:
     branches:
+      - dev  # Only dev is pushed directly
+
+  pull_request:
+    types:
+      - closed  # Runs only when PR is merged
+    branches:
+      - test
+      - stage
+      - prod
       - main
 
 permissions:
@@ -24,35 +33,46 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: qaw_milestone_4
+          fetch-depth: 0
 
-      - name: Set Environment Variables
+      - name: Determine Environment
         run: |
-          if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
-            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
-            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-          elif [ "${{ github.event.inputs.environment }}" == "test" ]; then
-            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
-            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-          elif [ "${{ github.event.inputs.environment }}" == "stage" ]; then
-            echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-            echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-            echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
-            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-          else
-            echo "PROJECT_ID=prj-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT=sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" >> $GITHUB_ENV
-            echo "WORKLOAD_IDENTITY_PROVIDER=projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-            echo "GCS_BUCKET=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
-            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-          fi
+          case "${{ github.ref_name }}" in
+            "dev")
+              echo "PROJECT_ID=prj-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-dataflow-us-4001@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/476093664680/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://gcs-duse4usw1-eda-qadp-raw-dev-48699" >> $GITHUB_ENV
+              echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+              ;;
+            "test")
+              echo "PROJECT_ID=prj-test-123456" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://test-composer-bucket" >> $GITHUB_ENV
+              echo "ENVIRONMENT=test" >> $GITHUB_ENV
+              ;;
+            "stage")
+              echo "PROJECT_ID=prj-stage-123456" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://stage-composer-bucket" >> $GITHUB_ENV
+              echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+              ;;
+            "prod")
+              echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://prod-composer-bucket" >> $GITHUB_ENV
+              echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+              ;;
+            "main")
+              echo "Final code storage—No deployment." && exit 0
+              ;;
+            *)
+              echo "Branch not configured for deployment." && exit 1
+              ;;
+          esac
   
       - name: Google Authentication
         id: auth
