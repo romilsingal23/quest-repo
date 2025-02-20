@@ -3,26 +3,76 @@ name: Deploy Cloud SQL and DNS
 on:
   push:
     branches:
-      - main  # Adjust as needed
-
-permissions:
-  id-token: write  # Required for Workload Identity Federation
-  contents: read
-
+      - dev  
+    paths:
+      - '.github/workflows/cloud-sql.yml'
+  pull_request:
+    branches:
+      - test
+      - stage
+      - prod
+      - main
+      
 jobs:
-  deploy:
+  cloud-sql:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: 'write'
+      contents: 'read'
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Authenticate for Cloud SQL (Service Project)
-      - name: Authenticate with Google Cloud (Cloud SQL)
+      - name: Determine Environment
+        run: |
+          case "${{ github.ref_name }}" in
+            "dev")
+              echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gcs-duse4usw1-eda-qadp-raw-dev-48699/test_folder/" >> $GITHUB_ENV
+              echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+              ;;
+            "test")
+              echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://test-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "ENVIRONMENT=test" >> $GITHUB_ENV
+              ;;
+            "stage")
+              echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://stage-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+              ;;
+            "prod")
+              echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gs://prod-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+              ;;
+            "main")
+              echo "Final code storage—No deployment." && exit 0
+              ;;
+            *)
+              echo "Branch not configured for deployment." && exit 1
+              ;;
+          esac
+          
+      # Google Authentication
+      - name: Google Authentication
+        id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_SQL }}
+          project_id: "${{ env.PROJECT_ID }}"
+          service_account: "${{ env.SERVICE_ACCOUNT }}"
+          workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
 
       - name: Install Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -31,8 +81,8 @@ jobs:
 
       - name: Create Cloud SQL Instance (Service Project)
         run: |
-          gcloud sql instances create qaw-app-db-dev \
-            --project=prj-cus-qaw-dev-66576 \
+          gcloud sql instances create qaw-app-db-${{ env.ENVIRONMENT }} \
+            --project=${{ env.PROJECT_ID }} \
             --region=us-east4 \
             --enable-private-service-connect \
             --allowed-psc-projects=prj-shrd-ntwk-3 \
@@ -41,11 +91,12 @@ jobs:
             --tier=db-custom-2-7680 \
             --database-version=POSTGRES_16 \
             --edition=ENTERPRISE \
-            --psc-auto-connections=network-projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external \
+            --psc-auto-connections=network=projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external,project=prj-shrd-ntwk-3 \
             --enable-password-policy \
             --disk-encryption-key=projects/prj-key-mgt-dev-203834/locations/us-east4/keyRings/gadp/cryptoKeys/cloudsql \
             --database-flags=cloudsql.enable_pgaudit=on \
-            --require-ssl
+            --require-ssl 
+            --quiet
 
       - name: Set Cloud SQL Password
         run: |
