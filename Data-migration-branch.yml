@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - dev
       - test
       - stage
       - prod
-  pull_request:
-    branches:
-      - main  # Ensure merging into main doesn't trigger deployments
+      - main
 
 jobs:
   copy-composer-dag:
@@ -31,25 +32,25 @@ jobs:
               echo "PROJECT_ID=prj-shrd-dev-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-us-4001@prj-shrd-dev-67236.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/1046068350740/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-              echo "GCS_BUCKET=gs://gcs-duse4usw1-shrd-artifact-dev-67236/test_folder/" >> $GITHUB_ENV
+              echo "GCS_BUCKET=gcs-duse4usw1-shrd-artifact-dev-67236" >> $GITHUB_ENV
               echo "ENVIRONMENT=dev" >> $GITHUB_ENV
               ;;
             "test")
-              echo "PROJECT_ID=prj-test-123456" >> $GITHUB_ENV
+              echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
               echo "GCS_BUCKET=gs://test-composer-bucket/dags/" >> $GITHUB_ENV
               echo "ENVIRONMENT=test" >> $GITHUB_ENV
               ;;
             "stage")
-              echo "PROJECT_ID=prj-stage-123456" >> $GITHUB_ENV
+              echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
               echo "GCS_BUCKET=gs://stage-composer-bucket/dags/" >> $GITHUB_ENV
               echo "ENVIRONMENT=stage" >> $GITHUB_ENV
               ;;
             "prod")
-              echo "PROJECT_ID=prj-prod-123456" >> $GITHUB_ENV
+              echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
               echo "GCS_BUCKET=gs://prod-composer-bucket/dags/" >> $GITHUB_ENV
@@ -71,11 +72,20 @@ jobs:
           service_account: "${{ env.SERVICE_ACCOUNT }}"
           workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
 
-      - name: Sync DAGs (Python)
-        run: gsutil -m rsync -r -d dags/ "${{ env.GCS_BUCKET }}"
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Upload all Python files
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: "dags/"
+          destination: "${{ env.GCS_BUCKET }}"
+          glob: "*.py"
 
       - name: Sync SQL folder
-        run: gsutil -m rsync -r -d dags/sql/ "${{ env.GCS_BUCKET }}"
+        run: gsutil -m rsync -r -d dags/sql/ "gs://${{ env.GCS_BUCKET }}/dags"
 
       - name: Sync DAG Config
-        run: gsutil -m rsync -r -d dags/dag_config/${{ env.ENVIRONMENT }}/ "${{ env.GCS_BUCKET }}"
+        run: gsutil -m rsync -r -d dags/dag_config/${{ env.ENVIRONMENT }}/config "gs://${{ env.GCS_BUCKET }}/dags"
+        
+      
