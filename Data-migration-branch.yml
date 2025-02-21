@@ -39,21 +39,21 @@ jobs:
               echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
-              echo "GCS_BUCKET=gs://test-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "GCS_BUCKET=test-composer-bucket" >> $GITHUB_ENV
               echo "ENVIRONMENT=test" >> $GITHUB_ENV
               ;;
             "stage")
               echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
-              echo "GCS_BUCKET=gs://stage-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "GCS_BUCKET=stage-composer-bucket" >> $GITHUB_ENV
               echo "ENVIRONMENT=stage" >> $GITHUB_ENV
               ;;
             "prod")
               echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-              echo "GCS_BUCKET=gs://prod-composer-bucket/dags/" >> $GITHUB_ENV
+              echo "GCS_BUCKET=prod-composer-bucket" >> $GITHUB_ENV
               echo "ENVIRONMENT=prod" >> $GITHUB_ENV
               ;;
             "main")
@@ -74,18 +74,15 @@ jobs:
 
       - name: Install Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-      
-      - name: Upload all Python files
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: "dags/"
-          destination: "${{ env.GCS_BUCKET }}"
-          glob: "*.py"
 
-      - name: Sync SQL folder
-        run: gsutil -m rsync -r -d dags/sql/ "gs://${{ env.GCS_BUCKET }}/dags"
+      - name: Rsync Python files only
+        run: |
+          gcloud storage rsync dags/ gs://${{ env.GCS_BUCKET }}/dags --recursive --include "*.py" --exclude "*"
 
-      - name: Sync DAG Config
-        run: gsutil -m rsync -r -d dags/dag_config/${{ env.ENVIRONMENT }}/config "gs://${{ env.GCS_BUCKET }}/dags"
-        
-      
+      - name: Rsync SQL folder
+        run: |
+          gcloud storage rsync dags/sql/ gs://${{ env.GCS_BUCKET }}/dags/sql --recursive
+
+      - name: Rsync DAG Config
+        run: |
+          gcloud storage rsync dags/dag_config/${{ env.ENVIRONMENT }}/config gs://${{ env.GCS_BUCKET }}/dags/dag_config/${{ env.ENVIRONMENT }}/config --recursive
