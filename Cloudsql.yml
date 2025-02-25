@@ -100,17 +100,30 @@ jobs:
             --require-ssl \
             --quiet
 
-      - name: Set Cloud SQL Password
+      - name: Extract PSC IP Address
         run: |
+          PSC_IP=$(gcloud sql instances describe qaw-app-db-${{ env.ENVIRONMENT }} \
+            --project=${{ env.PROJECT_ID }} \
+            --format="value(settings.ipConfiguration.pscAutoConnections[0].ipAddress)")
+          echo "PSC_IP=$PSC_IP" >> $GITHUB_ENV
+
+      - name: Generate and Store Random Password in Secret Manager
+        run: |
+          RANDOM_PASSWORD=$(openssl rand -base64 16)
+          echo "RANDOM_PASSWORD=$RANDOM_PASSWORD" >> $GITHUB_ENV
+          
+          if ! gcloud secrets describe db-password --project=${{ env.PROJECT_ID }}; then
+            gcloud secrets create db-password --replication-policy="automatic" --project=${{ env.PROJECT_ID }}
+          fi
+          
+          echo -n "$RANDOM_PASSWORD" | gcloud secrets versions add db-password --data-file=- --project=${{ env.PROJECT_ID }}
+
+      - name: Retrieve Password from Secret Manager and Set Cloud SQL Password
+        run: |
+          DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password --project=${{ env.PROJECT_ID }})
           gcloud sql users set-password postgres \
             --instance=qaw-app-db-${{ env.ENVIRONMENT }} \
-            --password=${{ secrets.DB_PASSWORD }}
-
-      - name: Describe Cloud SQL Instance
-        run: |
-          gcloud sql instances describe qaw-app-db-${{ env.ENVIRONMENT }} \
-            --project=${{ env.PROJECT_ID }} \
-            --format="json(settings.ipConfiguration.pscAutoConnections)"
+            --password="${DB_PASSWORD}"
 
       - name: Switch gcloud project to Shared VPC
         run: gcloud config set project prj-shrd-ntwk-3
@@ -124,12 +137,12 @@ jobs:
             --networks=vpc-non-prod-shared-host \
             --visibility=private
 
-      - name: Create Cloud DNS Record (Shared VPC Project)
+      - name: Create Cloud DNS Record with PSC IP
         run: |
           gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
             --project=prj-shrd-ntwk-3 \
             --type=A \
-            --rrdatas=10.143.0.52 \
+            --rrdatas=${{ env.PSC_IP }} \
             --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone
             
       - name: Update Cloud SQL Instance Backup Setting
@@ -137,5 +150,3 @@ jobs:
           echo "RUNNER_IP: ${{ env.RUNNER_IP }}"
           gcloud sql instances patch qaw-app-db-${{ env.ENVIRONMENT }} --backup-start-time=03:00
           gcloud sql instances patch qaw-app-db-${{ env.ENVIRONMENT }} --database-flags=log_hostname=on
-
-      
