@@ -12,7 +12,7 @@ on:
       - stage
       - prod
       - main
-      
+
 jobs:
   cloud-sql:
     runs-on: gcp-arc-rsd
@@ -60,7 +60,7 @@ jobs:
               echo "Branch not configured for deployment." && exit 1
               ;;
           esac
-          
+
       - name: Google Authentication
         id: auth
         uses: google-github-actions/auth@v2
@@ -110,7 +110,18 @@ jobs:
       - name: Switch gcloud project to Shared VPC
         run: gcloud config set project prj-shrd-ntwk-3
 
-      - name: Create Private IP for PSC Endpoint
+      - name: Check if Private IP Address Exists
+        id: check-ip
+        run: |
+          if gcloud compute addresses describe ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 --region=us-east4 > /dev/null 2>&1; then
+            echo "IP_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "IP_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create Private IP for PSC Endpoint (If Not Exists)
+        if: env.IP_EXISTS == 'false'
         run:  |
           gcloud compute addresses create ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
             --project=prj-shrd-ntwk-3 \
@@ -146,12 +157,22 @@ jobs:
             --dns-name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
             --networks=vpc-hub-external,vpc-non-prod-shared-host \
             --visibility=private
-            
-      - name: Update DNS Record
+
+      - name: Check if DNS Record Exists
+        id: check-dns-record
+        run: |
+          if gcloud dns record-sets list --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone --project=prj-shrd-ntwk-3 | grep "qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com"; then
+            echo "DNS_RECORD_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "DNS_RECORD_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update DNS Record (If Not Exists)
+        if: env.DNS_RECORD_EXISTS == 'false'
         run: |
           gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com \
             --project=prj-shrd-ntwk-3 \
             --type=A \
             --rrdatas=10.141.132.5 \
             --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone \
-            --ttl=60"
+            --ttl=60
