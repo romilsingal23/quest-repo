@@ -146,3 +146,12 @@ jobs:
             --dns-name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
             --networks=vpc-hub-external,vpc-non-prod-shared-host \
             --visibility=private
+            
+      - name: Update DNS Record
+        run: |
+          gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com \
+            --project=prj-shrd-ntwk-3 \
+            --type=A \
+            --rrdatas=10.141.132.5 \
+            --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone \
+            --ttl=60"
