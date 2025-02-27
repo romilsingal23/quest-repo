@@ -88,22 +88,25 @@ jobs:
         if: env.SQL_EXISTS == 'false'
         run: |
           gcloud sql instances create qaw-app-db-${{ env.ENVIRONMENT }} \
-            --project=${{ env.PROJECT_ID }} \
-            --region=us-east4 \
-            --enable-private-service-connect \
-            --allowed-psc-projects=prj-shrd-ntwk-3,prj-eda-qadp-raw-dev-48699 \
-            --availability-type=REGIONAL \
-            --no-assign-ip \
-            --tier=db-custom-2-7680 \
-            --database-version=POSTGRES_16 \
-            --edition=ENTERPRISE \
-            --psc-auto-connections=network=projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host,project=prj-shrd-ntwk-3 \
-            --enable-password-policy \
-            --disk-encryption-key=projects/prj-key-mgt-dev-20334/locations/us-east4/keyRings/qadp/cryptoKeys/cloudsql \
-            --database-flags=cloudsql.enable_pgaudit=on \
-            --require-ssl \
-            --quiet
-
+          --project=${{ env.PROJECT_ID }} \
+          --region=us-east4 \
+          --enable-private-service-connect \
+          --allowed-psc-projects=prj-shrd-ntwk-3,prj-eda-qadp-raw-dev-48699 \
+          --availability-type=REGIONAL \
+          --no-assign-ip \
+          --tier=db-custom-2-7680 \
+          --database-version=POSTGRES_16 \
+          --edition=ENTERPRISE \
+          --psc-auto-connections=network=projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host,project=prj-shrd-ntwk-3 \
+          --enable-password-policy \
+          --disk-encryption-key=projects/prj-key-mgt-dev-20334/locations/us-east4/keyRings/qadp/cryptoKeys/cloudsql \
+          --database-flags=cloudsql.enable_pgaudit=on \
+          --ssl-mode=ENCRYPTED_ONLY \
+          --backup-start-time=03:00 \
+          --database-flags=log_hostname=on \
+          --deletion-protection \
+          --enable-point-in-time-recovery
+          
       - name: Extract PSC IP Address
         run: |
           PSC_IP=$(gcloud sql instances describe qaw-app-db-${{ env.ENVIRONMENT }} \
@@ -129,9 +132,32 @@ jobs:
             --instance=qaw-app-db-${{ env.ENVIRONMENT }} \
             --password="${DB_PASSWORD}"
 
+      - name: Get PSC Service Attachment Link 
+        run: |
+          gcloud sql instances describe qaw-app-db-${{ env.ENVIRONMENT }} \
+            --project=${{ env.PROJECT_ID }} \
+            --format='json(pscServiceAttachmentLink)'
+      
       - name: Switch gcloud project to Shared VPC
         run: gcloud config set project prj-shrd-ntwk-3
 
+      - name: Create Private IP for PSC endpoint
+        run:  |
+          gcloud compute addresses create ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 \
+            --region=us-east4 \
+            --subnet=sn-ue4-cloudsql-psc-dev-1 \
+            --addresses=10.141.132.5
+
+      - name: Create forwading rule to connect PSC to Service Attachment
+        run: |
+          gcloud compute forwarding-rules create qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql --address=ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 \
+            --region=us-east4 \
+            --network=vpc-non-prod-shared-host \
+            --target-service-attachment=<service-attachment from above step> \
+            --allow-psc-global-access
+            
       - name: Check if Cloud DNS Zone Exists
         id: check-dns
         run: |
@@ -148,18 +174,7 @@ jobs:
             --project=prj-shrd-ntwk-3 \
             --description="DNS zone for the Cloud SQL instance" \
             --dns-name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
-            --networks=vpc-non-prod-shared-host \
+            --networks=vpc-hub-external, vpc-non-prod-shared-host \
             --visibility=private
 
-      - name: Create Cloud DNS Record with PSC IP
-        run: |
-          gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
-            --project=prj-shrd-ntwk-3 \
-            --type=A \
-            --rrdatas=${{ env.PSC_IP }} \
-            --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone
-            
-      - name: Update Cloud SQL Instance Backup Setting
-        run: |
-          gcloud sql instances patch qaw-app-db-${{ env.ENVIRONMENT }} --backup-start-time=03:00
-          gcloud sql instances patch qaw-app-db-${{ env.ENVIRONMENT }} --database-flags=log_hostname=on
+      
