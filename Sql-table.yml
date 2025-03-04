@@ -1,38 +1,103 @@
-name: Create Tables in PostgreSQL
+name: Create Schema and Tables in PostgreSQL
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - main  # Runs on push to main branch
-  workflow_dispatch:  # Allows manual trigger
-
+      - dev  
+    paths:
+      - '.github/workflows/sql-table.yml'
+      - 'tables/**'
+      
+  pull_request:
+    branches:
+      - test
+      - stage
+      - prod
+      - main
+  
 jobs:
   create-table:
-    runs-on: ubuntu-latest
+    runs-on: gcp-arc-rsd
+    permissions:
+      id-token: 'write'
+      contents: 'read'
 
     env:
       PROJECT_ID: "prj-cus-qaw-dev-66576"
       SECRET_NAME: "projects/865276656676/secrets/qaw-app-db-dev-password"
-      SQL_FILE: "APPLICATION.sql"
-      DB_HOST: "qaw-app-db-dev.gcp.qdx.com"
+      SQL_FILE: "tables/**"
+      DB_HOST: "qaw-app-db-dev-test.gcp.qdx.com"
       DB_PORT: "5432"
-      DB_NAME: "qaw_app_db"
+      DB_NAME: "postgres"
       DB_USER: "postgres"
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Determine Environment
+        run: |
+          case "${{ github.ref_name }}" in
+            "dev")
+              echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=dev-test" >> $GITHUB_ENV
+              ;;
+            "test")
+              echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=test" >> $GITHUB_ENV
+              ;;
+            "stage")
+              echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+              ;;
+            "prod")
+              echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+              ;;
+            "main")
+              echo "Final code storage—No deployment." && exit 0
+              ;;
+            *)
+              echo "Branch not configured for deployment." && exit 1
+              ;;
+          esac
+
+      - name: Google Authentication
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "${{ env.PROJECT_ID }}"
+          service_account: "${{ env.SERVICE_ACCOUNT }}"
+          workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
+
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
       - name: Install PostgreSQL Client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Retrieve Database Password from Secrets
-        run: echo "PGPASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Verify Connection to PostgreSQL
+      - name: Retrieve Password from Secret Manager and Set Cloud SQL Password
         run: |
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT version();"
+          DB_PASSWORD=$(gcloud secrets versions access latest --secret=qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }})
+          echo "PGPASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
 
+      - name: Verify Connection to PostgreSQL and Create Database
+        run: |
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 'CREATE DATABASE qaw_app_db' WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'qaw_app_db')"
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d qaw_app_db -c "CREATE SCHEMA IF NOT EXISTS qaw_app"
+ 
       - name: Execute SQL Script
         run: |
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -a -f $SQL_FILE
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d qaw_app_db -a -f $SQL_FILE --set=sslmode=require
+          
