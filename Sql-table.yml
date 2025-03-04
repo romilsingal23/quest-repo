@@ -8,13 +8,14 @@ on:
     paths:
       - '.github/workflows/sql-table.yml'
       - 'tables/**'
+      
   pull_request:
     branches:
       - test
       - stage
       - prod
       - main
-
+  
 jobs:
   create-table:
     runs-on: gcp-arc-rsd
@@ -23,12 +24,9 @@ jobs:
       contents: 'read'
 
     env:
-      PROJECT_ID: "prj-cus-qaw-dev-66576"
-      SECRET_NAME: "projects/865276656676/secrets/qaw-app-db-dev-password"
-      DB_HOST: "qaw-app-db-dev-test.gcp.qdx.com"
-      DB_PORT: "5432"
-      DB_NAME: "qaw_app_db"
+      DB_NAME: "postgres"
       DB_USER: "postgres"
+      DB_PORT: "5432"
 
     steps:
       - name: Checkout Repository
@@ -42,24 +40,28 @@ jobs:
               echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
               echo "ENVIRONMENT=dev-test" >> $GITHUB_ENV
+              echo "DB_HOST=qaw-app-db-dev-test.gcp.qdx.com" >> $GITHUB_ENV
               ;;
             "test")
               echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
               echo "ENVIRONMENT=test" >> $GITHUB_ENV
+              echo "DB_HOST=qaw-app-db-test.gcp.qdx.com" >> $GITHUB_ENV
               ;;
             "stage")
               echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
               echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+              echo "DB_HOST=qaw-app-db-stage.gcp.qdx.com" >> $GITHUB_ENV
               ;;
             "prod")
               echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
               echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
               echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+              echo "DB_HOST=qaw-app-db-prod.gcp.qdx.com" >> $GITHUB_ENV
               ;;
             "main")
               echo "Final code storage—No deployment." && exit 0
@@ -90,27 +92,20 @@ jobs:
           DB_PASSWORD=$(gcloud secrets versions access latest --secret=qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }})
           echo "PGPASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
 
-      - name: Verify Connection to PostgreSQL and Create Database If Not Exists
+      - name: Verify Connection to PostgreSQL and Create Database
         run: |
-          DB_EXISTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'qaw_app_db'")
+          DB_EXISTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -tAc "SELECT 1 FROM pg_database WHERE datname='qaw_app_db'")
           if [ "$DB_EXISTS" != "1" ]; then
-            echo "Database 'qaw_app_db' does not exist. Creating..."
-            psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d postgres -c "CREATE DATABASE qaw_app_db"
+            psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "CREATE DATABASE qaw_app_db"
           else
-            echo "Database 'qaw_app_db' already exists. Skipping creation."
+            echo "Database already exists, skipping creation."
           fi
 
-      - name: Create Schema If Not Exists
-        run: |
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d qaw_app_db -c "CREATE SCHEMA IF NOT EXISTS qaw_app"
 
       - name: Execute SQL Scripts
         run: |
           for file in tables/*.sql; do 
-            if [ -f "$file" ]; then  
-              echo "Executing $file..."
-              psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d qaw_app_db -a -f "$file" --set=sslmode=require
-            else
-              echo "No SQL files found in tables/ directory."
-            fi
+            echo "Executing $file"
+            psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d qaw_app_db -a -f "$file" --set=sslmode=require 
           done
