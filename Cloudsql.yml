@@ -29,7 +29,18 @@ jobs:
 
       - name: Determine Environment
         run: |
-          case "${{ github.ref_name }}" in
+          case "${{ github.event_name }}" in
+            "push")
+              BRANCH="${{ github.ref_name }}"
+              ;;
+            "pull_request")
+              BRANCH="${{ github.base_ref }}"  # Target branch of PR
+              ;;
+          esac
+
+          echo "Triggered by event: ${{ github.event_name }} on branch: $BRANCH"
+
+          case "$BRANCH" in
             "dev")
               echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
               echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
@@ -57,10 +68,12 @@ jobs:
               echo "ENVIRONMENT=prod" >> $GITHUB_ENV
               ;;
             "main")
-              echo "Final code storage—No deployment." && exit 0
+              echo "Final code storage—No deployment."
+              exit 0
               ;;
             *)
-              echo "Branch not configured for deployment." && exit 1
+              echo "Branch not configured for deployment."
+              exit 1
               ;;
           esac
 
@@ -93,7 +106,6 @@ jobs:
           --project=${{ env.PROJECT_ID }} \
           --region=us-east4 \
           --enable-private-service-connect \
-          --allowed-psc-projects=prj-shrd-ntwk-3,prj-eda-qadp-raw-tst-48699 \
           --availability-type=REGIONAL \
           --no-assign-ip \
           --tier=db-custom-2-7680 \
@@ -114,23 +126,6 @@ jobs:
             --project=${{ env.PROJECT_ID }} \
             --format="value(pscServiceAttachmentLink)")
           echo "SERVICE_ATTACHMENT=$SERVICE_ATTACHMENT" >> $GITHUB_ENV
-
-      - name: Generate and Store Random Password in Secret Manager
-        run: |
-          RANDOM_PASSWORD=$(openssl rand -base64 16)
-          echo "RANDOM_PASSWORD=$RANDOM_PASSWORD" >> $GITHUB_ENV
-          
-          if ! gcloud secrets describe qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
-            gcloud secrets create qaw-app-db-${{ env.ENVIRONMENT }}-password --replication-policy="automatic" --project=${{ env.PROJECT_ID }}
-            echo -n "$RANDOM_PASSWORD" | gcloud secrets versions add qaw-app-db-${{ env.ENVIRONMENT }}-password --data-file=- --project=${{ env.PROJECT_ID }}
-          fi
-          
-      - name: Retrieve Password from Secret Manager and Set Cloud SQL Password
-        run: |
-          DB_PASSWORD=$(gcloud secrets versions access latest --secret=qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }})
-          gcloud sql users set-password postgres \
-            --instance=qaw-app-db \
-            --password="${DB_PASSWORD}"
 
       - name: Switch gcloud project to Shared VPC
         run: gcloud config set project prj-shrd-ntwk-3
@@ -163,31 +158,3 @@ jobs:
             --network=vpc-non-prod-shared-host \
             --target-service-attachment=${{ env.SERVICE_ATTACHMENT }} \
             --allow-psc-global-access
-
-      - name: Check if Cloud DNS Zone Exists
-        id: check-dns
-        run: |
-          if gcloud dns managed-zones describe qaw-app-db-${{ env.ENVIRONMENT }}-zone --project=prj-shrd-ntwk-3 > /dev/null 2>&1; then
-            echo "DNS_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "DNS_EXISTS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Create Cloud DNS Managed Zone (If Not Exists)
-        if: env.DNS_EXISTS == 'false'
-        run: |
-          gcloud dns managed-zones create qaw-app-db-${{ env.ENVIRONMENT }}-zone \
-            --project=prj-shrd-ntwk-3 \
-            --description="DNS zone for the Cloud SQL instance" \
-            --dns-name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
-            --networks=vpc-hub-external,vpc-non-prod-shared-host \
-            --visibility=private
-
-      - name: Update DNS Record (If Not Exists)
-        run: |
-          gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com \
-            --project=prj-shrd-ntwk-3 \
-            --type=A \
-            --rrdatas=${{ env.PSC_IP }} \
-            --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone \
-            --ttl=60
