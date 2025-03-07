@@ -41,81 +41,149 @@ jobs:
       - name: Determine Environment
         run: |
           case "${{ github.event_name }}" in
-            "push")
-              BRANCH="${{ github.ref_name }}"
-              ;;
-            "pull_request")
-              BRANCH="${{ github.base_ref }}"
-              ;;
-            "workflow_dispatch")
-              BRANCH="${{ github.event.inputs.environment }}"
-              ;;
-            *)
-              echo "Unsupported event: ${{ github.event_name }}"
-              exit 1
-              ;;
+            "push") BRANCH="${{ github.ref_name }}" ;;
+            "pull_request") BRANCH="${{ github.base_ref }}" ;;
+            "workflow_dispatch") BRANCH="${{ github.event.inputs.environment }}" ;;
+            *) echo "Unsupported event: ${{ github.event_name }}"; exit 1 ;;
           esac
-
-          echo "Triggered by event: ${{ github.event_name }} on branch/environment: $BRANCH"
+          echo "ENVIRONMENT=$BRANCH" >> $GITHUB_ENV
 
           case "$BRANCH" in
             "dev")
               echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
-              echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
-              echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-              echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-              echo "PSC_IP=10.141.132.5" >> $GITHUB_ENV
-              echo "SUBNET=sn-ue4-cloudsql-psc-dev-1" >> $GITHUB_ENV
-              ;;
+              echo "SUBNET=sn-ue4-cloudsql-psc-dev-1" >> $GITHUB_ENV ;;
             "test")
               echo "PROJECT_ID=prj-cus-qaw-tst-66576" >> $GITHUB_ENV
-              echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-tst-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
-              echo "WORKLOAD_IDENTITY_PROVIDER=projects/139527806265/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-              echo "ENVIRONMENT=tst" >> $GITHUB_ENV
-              echo "PSC_IP=10.141.135.5" >> $GITHUB_ENV
-              echo "SUBNET=sn-ue4-cloudsql-psc-tst-1" >> $GITHUB_ENV
-              ;;
+              echo "SUBNET=sn-ue4-cloudsql-psc-tst-1" >> $GITHUB_ENV ;;
             "stage")
               echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
-              echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-              echo "ENVIRONMENT=stg" >> $GITHUB_ENV
-              echo "PSC_IP=10.141.135.5" >> $GITHUB_ENV
-              echo "SUBNET=sn-ue4-cloudsql-psc-stg-1" >> $GITHUB_ENV
-              ;;
+              echo "SUBNET=sn-ue4-cloudsql-psc-stg-1" >> $GITHUB_ENV ;;
             "prod")
               echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
-              echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-              echo "ENVIRONMENT=prd" >> $GITHUB_ENV
-              echo "PSC_IP=10.141.135.5" >> $GITHUB_ENV
-              echo "SUBNET=sn-ue4-cloudsql-psc-prd-1" >> $GITHUB_ENV
-              ;;
-            "main")
-              echo "Final code storage—No deployment." && exit 0
-              ;;
-            *)
-              echo "Branch not configured for deployment." && exit 1
-              ;;
+              echo "SUBNET=sn-ue4-cloudsql-psc-prd-1" >> $GITHUB_ENV ;;
+            "main") echo "Final code storage—No deployment."; exit 0 ;;
+            *) echo "Branch not configured for deployment."; exit 1 ;;
           esac
 
+      - name: Google Authentication
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: sa-use4-cloudsql-pipeline@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          workload_identity_provider: projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider
+
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Check if Cloud SQL Instance Exists
+        id: check-sql
+        run: |
+          if gcloud sql instances describe qaw-app-db --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
+            echo "SQL_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "SQL_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create Cloud SQL Instance (If Not Exists)
+        if: env.SQL_EXISTS == 'false'
+        run: |
+          gcloud sql instances create qaw-app-db \
+          --project=${{ env.PROJECT_ID }} \
+          --region=us-east4 \
+          --enable-private-service-connect \
+          --tier=db-custom-2-7680 \
+          --database-version=POSTGRES_16 \
+          --edition=ENTERPRISE \
+          --deletion-protection
+
+      - name: Extract PSC Service Attachment Link
+        run: |
+          SERVICE_ATTACHMENT=$(gcloud sql instances describe qaw-app-db \
+            --project=${{ env.PROJECT_ID }} \
+            --format="value(pscServiceAttachmentLink)")
+          echo "SERVICE_ATTACHMENT=$SERVICE_ATTACHMENT" >> $GITHUB_ENV
+
+      - name: Check if Private IP Address for PSC Exists
+        id: check-ip
+        run: |
+          if gcloud compute addresses describe ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 --region=us-east4 > /dev/null 2>&1; then
+            echo "IP_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "IP_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create Private IP for PSC Endpoint (If Not Exists)
+        if: env.IP_EXISTS == 'false'
+        run: |
+          gcloud compute addresses create ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 \
+            --region=us-east4 \
+            --subnet=${{ env.SUBNET }}
+
       - name: Check if Forwarding Rule Exists
-        id: check-forwarding
+        id: check-fr
         run: |
           if gcloud compute forwarding-rules describe qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
             --project=prj-shrd-ntwk-3 --region=us-east4 > /dev/null 2>&1; then
-            echo "FORWARDING_EXISTS=true" >> $GITHUB_ENV
+            echo "FR_EXISTS=true" >> $GITHUB_ENV
           else
-            echo "FORWARDING_EXISTS=false" >> $GITHUB_ENV
+            echo "FR_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Create Forwarding Rule to Connect PSC to Service Attachment
-        if: env.FORWARDING_EXISTS == 'false'
+      - name: Create Forwarding Rule (If Not Exists)
+        if: env.FR_EXISTS == 'false'
         run: |
           gcloud compute forwarding-rules create qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
             --address=ip-npr-psc-qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
             --project=prj-shrd-ntwk-3 \
             --region=us-east4 \
-            --network=vpc-non-prod-shared-host \
-            --target-service-attachment=${{ env.SERVICE_ATTACHMENT }} \
-            --allow-psc-global-access
+            --target-service-attachment=${{ env.SERVICE_ATTACHMENT }}
+
+      - name: Extract PSC IP Address
+        id: get-psc-ip
+        run: |
+          PSC_IP=$(gcloud compute forwarding-rules describe qaw-app-db-${{ env.ENVIRONMENT }}-cloudsql \
+            --project=prj-shrd-ntwk-3 --region=us-east4 \
+            --format="value(IPAddress)")
+          echo "PSC_IP=$PSC_IP" >> $GITHUB_ENV
+
+      - name: Check if DNS Zone Exists
+        id: check-dns
+        run: |
+          if gcloud dns managed-zones describe qaw-app-db-${{ env.ENVIRONMENT }}-zone --project=prj-shrd-ntwk-3 > /dev/null 2>&1; then
+            echo "DNS_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "DNS_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create Cloud DNS Zone (If Not Exists)
+        if: env.DNS_EXISTS == 'false'
+        run: |
+          gcloud dns managed-zones create qaw-app-db-${{ env.ENVIRONMENT }}-zone \
+            --project=prj-shrd-ntwk-3 \
+            --description="DNS zone for Cloud SQL" \
+            --dns-name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
+            --visibility=private
+
+      - name: Check if A Record Exists
+        id: check-a-record
+        run: |
+          if gcloud dns record-sets list --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone \
+            --project=prj-shrd-ntwk-3 --filter="name=qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com." | grep -q "A"; then
+            echo "A_RECORD_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "A_RECORD_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create A Record (If Not Exists)
+        if: env.A_RECORD_EXISTS == 'false'
+        run: |
+          gcloud dns record-sets create qaw-app-db-${{ env.ENVIRONMENT }}.gcp.qdx.com. \
+            --project=prj-shrd-ntwk-3 \
+            --type=A \
+            --rrdatas=${{ env.PSC_IP }} \
+            --zone=qaw-app-db-${{ env.ENVIRONMENT }}-zone \
+            --ttl=60
