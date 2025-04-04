@@ -1,0 +1,97 @@
+name: Manage PostgreSQL User Permissions
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "The username to create"
+        required: true
+      password:
+        description: "The password for the user"
+        required: true
+      role:
+        description: "Role type (read-only or read-write)"
+        required: true
+        default: "read-only"
+        options:
+          - read-only
+          - read-write
+      schema_name:
+        description: "The schema to assign permissions"
+        required: true
+        default: "public"
+
+jobs:
+  manage-postgres-user:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create PostgreSQL user and assign permissions
+        env:
+          PGHOST: ${{ secrets.PGHOST }}
+          PGPORT: ${{ secrets.PGPORT }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+        run: |
+          # Input variables
+          USERNAME="${{ github.event.inputs.username }}"
+          PASSWORD="${{ github.event.inputs.password }}"
+          ROLE="${{ github.event.inputs.role }}"
+          SCHEMA="${{ github.event.inputs.schema_name }}"
+
+          # Create the user
+          psql -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${USERNAME}') THEN
+              CREATE USER ${USERNAME} WITH PASSWORD '${PASSWORD}';
+            END IF;
+          END \$\$;"
+
+          # Grant permissions based on role
+          if [ "$ROLE" = "read-only" ]; then
+            echo "Granting read-only permissions to user ${USERNAME} on schema ${SCHEMA}..."
+            # Database and schema-level permissions
+            psql -c "GRANT CONNECT ON DATABASE ${PGDATABASE} TO ${USERNAME};"
+            psql -c "GRANT USAGE ON SCHEMA ${SCHEMA} TO ${USERNAME};"
+
+            # Permissions on tables and views
+            psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT SELECT ON TABLES TO ${USERNAME};"
+
+            # Permissions on sequences
+            psql -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT USAGE, SELECT ON SEQUENCES TO ${USERNAME};"
+
+            # Permissions on functions and procedures
+            psql -c "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON FUNCTIONS TO ${USERNAME};"
+            psql -c "GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON PROCEDURES TO ${USERNAME};"
+
+          elif [ "$ROLE" = "read-write" ]; then
+            echo "Granting read-write permissions to user ${USERNAME} on schema ${SCHEMA}..."
+            # Database and schema-level permissions
+            psql -c "GRANT CONNECT ON DATABASE ${PGDATABASE} TO ${USERNAME};"
+            psql -c "GRANT USAGE ON SCHEMA ${SCHEMA} TO ${USERNAME};"
+
+            # Permissions on tables and views
+            psql -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${USERNAME};"
+
+            # Permissions on sequences
+            psql -c "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${USERNAME};"
+
+            # Permissions on functions and procedures
+            psql -c "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON FUNCTIONS TO ${USERNAME};"
+            psql -c "GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON PROCEDURES TO ${USERNAME};"
+
+          else
+            echo "Invalid role specified: ${ROLE}"
+            exit 1
+          fi
