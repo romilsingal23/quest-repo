@@ -1,112 +1,164 @@
-name: Manage PostgreSQL User Permissions
+name: Create PostgreSQL User
 
-on: workflow_dispatch: inputs: username: description: "The username to create" required: true password: description: "The password for the user" required: true role: description: "Role type (read-only or read-write)" required: true default: "read-only" options: - read-only - read-write schema_name: description: "The schema to assign permissions" required: true default: "public"
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "The username to create"
+        required: true
+      password:
+        description: "The password for the user"
+        required: true
+      role:
+        description: "Role type (read-only or read-write)"
+        required: true
+        default: "read-only"
+        options:
+          - read-only
+          - read-write
+      schema_name:
+        description: "The schema to assign permissions"
+        required: true
+        default: "public"
 
-jobs: manage-postgres-user: runs-on: ubuntu-latest permissions: id-token: 'write' contents: 'read'
+permissions: 
+      id-token: 'write' 
+      contents: 'read'
 
-env:
-  PGPORT: "5432"
-  PGDATABASE: "postgres"
-  PGUSER: "postgres"
-
-steps:
-  - name: Checkout Repository
-    uses: actions/checkout@v4
-
-  - name: Determine Environment
-    run: |
-      case "${{ github.ref_name }}" in
-        "dev")
-          echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
-          echo "ENVIRONMENT=dev-test" >> $GITHUB_ENV
-          echo "PGHOST=qaw-app-db-dev-test.gcp.qdx.com" >> $GITHUB_ENV
-          ;;
-        "test")
-          echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
-          echo "ENVIRONMENT=test" >> $GITHUB_ENV
-          echo "PGHOST=qaw-app-db-test.gcp.qdx.com" >> $GITHUB_ENV
-          ;;
-        "stage")
-          echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
-          echo "ENVIRONMENT=stage" >> $GITHUB_ENV
-          echo "PGHOST=qaw-app-db-stage.gcp.qdx.com" >> $GITHUB_ENV
-          ;;
-        "prod")
-          echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
-          echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-          echo "PGHOST=qaw-app-db-prod.gcp.qdx.com" >> $GITHUB_ENV
-          ;;
-        "main")
-          echo "Final code storage—No deployment." && exit 0
-          ;;
-        *)
-          echo "Branch not configured for deployment." && exit 1
-          ;;
-      esac
-
-  - name: Google Authentication
-    id: auth
-    uses: google-github-actions/auth@v2
-    with:
-      project_id: "${{ env.PROJECT_ID }}"
-      service_account: "${{ env.SERVICE_ACCOUNT }}"
-      workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
-
-  - name: Install Google Cloud SDK
-    uses: google-github-actions/setup-gcloud@v2
-    with:
-      project_id: ${{ env.PROJECT_ID }}
-
-  - name: Retrieve Password from Secret Manager and Set Cloud SQL Password
-    run: |
-      PGPASSWORD=$(gcloud secrets versions access latest --secret=qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }})
-      echo "PGPASSWORD=$PGPASSWORD" >> $GITHUB_ENV
-
-  - name: Set up PostgreSQL client
-    run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-  - name: Create PostgreSQL user and assign permissions
+jobs:
+  create-postgres-user:
+    runs-on: gcp-arc-rsd
+    
     env:
-      PGHOST: ${{ env.PGHOST }}
-      PGPORT: ${{ env.PGPORT }}
-      PGDATABASE: ${{ env.PGDATABASE }}
-      PGUSER: ${{ env.PGUSER }}
-      PGPASSWORD: ${{ env.PGPASSWORD }}
-    run: |
-      # Input variables
-      USERNAME="${{ github.event.inputs.username }}"
-      PASSWORD="${{ github.event.inputs.password }}"
-      ROLE="${{ github.event.inputs.role }}"
-      SCHEMA="${{ github.event.inputs.schema_name }}"
+      PGPORT: "5432"
+      PGDATABASE: "qaw_app_db"
+      PGUSER: "postgres"
+    
+    steps:
+      
+      - name: Determine Environment
+        run: |
+          case "${{ github.ref_name }}" in
+            "dev")
+              echo "PROJECT_ID=prj-cus-qaw-dev-66576" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-use4-cloudsql-pipeline@prj-cus-qaw-dev-66576.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/865276656676/locations/global/workloadIdentityPools/wif-pool/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+              echo "PGHOST=qaw-app-db-dev.gcp.qdx.com" >> $GITHUB_ENV
+              ;;
+            "test")
+              echo "PROJECT_ID=prj-shrd-tst-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-test@prj-test-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/176775368316/locations/global/workloadIdentityPools/wif-test/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=tst" >> $GITHUB_ENV
+              echo "PGHOST=qaw-app-db-test.gcp.qdx.com" >> $GITHUB_ENV
+              ;;
+            "stage")
+              echo "PROJECT_ID=prj-shrd-stg-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-stage@prj-stage-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-stage/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=stg" >> $GITHUB_ENV
+              echo "PGHOST=qaw-app-db-stage.gcp.qdx.com" >> $GITHUB_ENV
+              ;;
+            "prod")
+              echo "PROJECT_ID=prj-shrd-prd-67236" >> $GITHUB_ENV
+              echo "SERVICE_ACCOUNT=sa-composer-prod@prj-prod-123456.iam.gserviceaccount.com" >> $GITHUB_ENV
+              echo "WORKLOAD_IDENTITY_PROVIDER=projects/123456789/locations/global/workloadIdentityPools/wif-prod/providers/wif-provider" >> $GITHUB_ENV
+              echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+              echo "PGHOST=qaw-app-db-prod.gcp.qdx.com" >> $GITHUB_ENV
+              ;;
+            "main")
+              echo "Final code storage—No deployment." && exit 0
+              ;;
+            *)
+              echo "Branch not configured for deployment." && exit 1
+              ;;
+          esac
+    
+      - name: Google Authentication
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "${{ env.PROJECT_ID }}"
+          service_account: "${{ env.SERVICE_ACCOUNT }}"
+          workload_identity_provider: "${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
+    
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+    
+      - name: Retrieve Password from Secret Manager and Set Cloud SQL Password
+        run: |
+          PGPASSWORD=$(gcloud secrets versions access latest --secret=qaw-app-db-${{ env.ENVIRONMENT }}-password --project=${{ env.PROJECT_ID }})
+          echo "PGPASSWORD=$PGPASSWORD" >> $GITHUB_ENV
+    
+      - name: Set up PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+    
+      - name: Create PostgreSQL user and assign permissions
+        env:
+          PGHOST: ${{ env.PGHOST }}
+          PGPORT: ${{ env.PGPORT }}
+          PGDATABASE: ${{ env.PGDATABASE }}
+          PGUSER: ${{ env.PGUSER }}
+          PGPASSWORD: ${{ env.PGPASSWORD }}
+        run: |
+          # Input variables
+          USERNAME="${{ github.event.inputs.username }}"
+          PASSWORD="${{ github.event.inputs.password }}"
+          ROLE="${{ github.event.inputs.role }}"
+          SCHEMA="${{ github.event.inputs.schema_name }}"
+    
+          # Create the user
+          psql -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${USERNAME}') THEN
+              CREATE USER ${USERNAME} WITH PASSWORD '${PASSWORD}';
+            END IF;
+          END \$\$;"
 
-      # Create the user
-      psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "DO $$ BEGIN
-        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$USERNAME') THEN
-          CREATE USER $USERNAME WITH PASSWORD '$PASSWORD';
-        END IF;
-      END $$;"
+          # Grant permissions based on role
+          if [ "$ROLE" = "read-only" ]; then
+            echo "Granting read-only permissions to user ${USERNAME} on schema ${SCHEMA}..."
+            # Database and schema-level permissions
+            psql -c "GRANT CONNECT ON DATABASE ${PGDATABASE} TO ${USERNAME};"
+            psql -c "GRANT USAGE ON SCHEMA ${SCHEMA} TO ${USERNAME};"
 
-      # Grant permissions based on role
-      if [ "$ROLE" = "read-only" ]; then
-        echo "Granting read-only permissions to user $USERNAME on schema $SCHEMA..."
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT CONNECT ON DATABASE $PGDATABASE TO $USERNAME;"
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT USAGE ON SCHEMA $SCHEMA TO $USERNAME;"
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT SELECT ON ALL TABLES IN SCHEMA $SCHEMA TO $USERNAME;"
-      elif [ "$ROLE" = "read-write" ]; then
-        echo "Granting read-write permissions to user $USERNAME on schema $SCHEMA..."
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT CONNECT ON DATABASE $PGDATABASE TO $USERNAME;"
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT USAGE ON SCHEMA $SCHEMA TO $USERNAME;"
-        psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA $SCHEMA TO $USERNAME;"
-      else
-        echo "Invalid role specified: $ROLE"
-        exit 1
-      fi
+            # Permissions on tables and views
+            psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT SELECT ON TABLES TO ${USERNAME};"
 
+            # Permissions on sequences
+            psql -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT USAGE, SELECT ON SEQUENCES TO ${USERNAME};"
+
+            # Permissions on functions and procedures
+            psql -c "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON FUNCTIONS TO ${USERNAME};"
+            psql -c "GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON PROCEDURES TO ${USERNAME};"
+
+          elif [ "$ROLE" = "read-write" ]; then
+            echo "Granting read-write permissions to user ${USERNAME} on schema ${SCHEMA}..."
+            # Database and schema-level permissions
+            psql -c "GRANT CONNECT ON DATABASE ${PGDATABASE} TO ${USERNAME};"
+            psql -c "GRANT USAGE ON SCHEMA ${SCHEMA} TO ${USERNAME};"
+
+            # Permissions on tables and views
+            psql -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${USERNAME};"
+
+            # Permissions on sequences
+            psql -c "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${USERNAME};"
+
+            # Permissions on functions and procedures
+            psql -c "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON FUNCTIONS TO ${USERNAME};"
+            psql -c "GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA ${SCHEMA} TO ${USERNAME};"
+            psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA ${SCHEMA} GRANT EXECUTE ON PROCEDURES TO ${USERNAME};"
+
+          else
+            echo "Invalid role specified: ${ROLE}"
+            exit 1
+          fi  
