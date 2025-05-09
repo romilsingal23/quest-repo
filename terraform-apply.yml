@@ -1,0 +1,96 @@
+name: 'Terraform Apply' 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      
+  workflow_dispatch:
+env:
+  PROJECT_ID: 'prj-boot-iac-us-1'
+  PROJECT_NO: 974223802243
+  SA_NAME: 'id-sa-boot-iac-us-4000'
+  
+permissions:
+      contents: 'read'
+      id-token: 'write'
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+ 
+jobs:
+   plan:
+    runs-on: gcp-arc-rsd
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig  
+
+      - name: Terraform Plan
+        run: |
+          cd ${{ github.workspace }}/terraform
+          terraform init -reconfigure 
+          terraform plan -var-file=vm.tfvars -lock=false
+
+   Apply:
+    runs-on: gcp-arc-rsd
+    environment: final-review
+    needs: plan
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig  
+
+      - name: Terraform Apply
+        run: |
+          cd ${{ github.workspace }}/terraform
+          terraform init -reconfigure 
+          terraform apply -var-file=vm.tfvars -auto-approve
