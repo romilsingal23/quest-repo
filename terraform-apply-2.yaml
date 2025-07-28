@@ -1,0 +1,140 @@
+name: 'Terraform Apply'
+on:
+  push:
+    branches:
+      - main
+    
+    paths:
+      - 'terraform/**'
+      
+  workflow_dispatch:
+env:
+  PROJECT_ID: 'prj-boot-iac-us-1'
+  PROJECT_NO: 974223802243
+  SA_NAME: 'id-sa-boot-iac-us-4000'
+  
+permissions:
+      contents: 'read'
+      id-token: 'write'
+
+concurrency:
+  group: "apply-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+   detect-changes:
+    name: 'Detect changes in environments & services'
+    runs-on: gcp-arc-rsd
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      changed_envs: ${{ steps.set-envs.outputs.envs }}
+
+    steps: 
+      - name: Checkout Code
+        uses: actions/checkout@v1
+        with:
+          fetch_depth: 0
+
+      - name: Determine Changed services
+        id: set-matrix
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+
+          # Extract unique directories in the format "env/service"
+          CHANGED_SERVICES=$(echo "$CHANGED_FILES" | awk -F'/' '$1 != ".github" || $2 !="workflows" {print $2"/"$3}' | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          
+          echo "Changed services: $CHANGED_SERVICES"
+          MATRIX=$(echo $CHANGED_SERVICES | jq -c '[.[] | { service: .,env: (split("/")[0]) }]')
+          UNIQUE_ENVS=$(echo $MATRIX | jq -c 'map(.env) | unique')
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "envs=$UNIQUE_ENVS" >> "$GITHUB_OUTPUT"
+
+      - name: Debug Matrix OUtput
+        run : |
+            echo "matrix received from find-changes ${{ steps.set-matrix.outputs.matrix }}"
+
+   plan:
+    runs-on: gcp-arc-rsd
+    needs: detect-changes
+    strategy: 
+      matrix:
+         include: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig
+
+      - name: Terraform Plan
+        run: |
+          cd terraform/${{ matrix.service }}
+          terraform init -reconfigure 
+          terraform plan -lock=false
+
+   Apply:
+    runs-on: gcp-arc-rsd
+    strategy: 
+      matrix:
+         include: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    environment: ${{ matrix.env }}
+    needs: 
+      - detect-changes
+      - plan
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig
+
+      - name: Terraform Apply
+        run: |
+          cd terraform/${{ matrix.service }}
+          terraform init -reconfigure 
+          terraform apply -auto-approve
