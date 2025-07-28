@@ -1,0 +1,10 @@
+
+gcloud iam workload-identity-pools create "wif-pool"   --location="global"   --display-name="WIF pool"
+
+gcloud iam workload-identity-pools providers create-oidc "wif-provider"   --location="global"   --workload-identity-pool="wif-pool"   --display-name="Workload Identity provider"   --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud,attribute.repository=assertion.repository"   --issuer-uri="https://token.actions.githubusercontent.com" --attribute-condition="assertion.repository_owner=='QDXEnterpriseOrg'"
+
+gcloud iam service-accounts add-iam-policy-binding "sa-use4-mntr-bq@prj-shrd-mntr-4.iam.gserviceaccount.com"   --role="roles/iam.workloadIdentityUser"   --member="principalSet://iam.googleapis.com/projects/633649347980/locations/global/workloadIdentityPools/wif-pool/attribute.repository/QDXEnterpriseOrg/dso-gcp-shrd-mntr-4"
+
+
+
+
