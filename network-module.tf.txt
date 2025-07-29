@@ -1,0 +1,218 @@
+  #...................................... Host Project Firewall .....................................#
+ module "vpc_firewall_rule" {
+  for_each     = {
+    for k, v in try(var.firewall,{}): k => v if v.delete != true
+  }
+  source                                = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-firewall?ref=v1.0.0"
+  project_id                            = each.value.project_id 
+  network_name                          = each.key
+  rules                                 = each.value.rules
+  depends_on                            = [ module.vpc_subnets ]
+
+} 
+
+#...................................... Host Project VPC .....................................#
+module "vpc" {
+  for_each     = {
+    for k, v in try(var.vpc,{}): k => v if v.delete != true
+  }
+  source                                    = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-vpc?ref=v1.0.0"
+  network_name                              = each.key 
+  description                               = each.value.description
+  auto_create_subnetworks                   = each.value.auto_create_subnetworks
+  routing_mode                              = each.value.routing_mode
+  #bgp_best_path_selection_mode              = each.value.bgp_best_path_selection_mode             
+  #bgp_always_compare_med                    = each.value.bgp_always_compare_med                   
+  #bgp_inter_region_cost                     = each.value.bgp_inter_region_cost                    
+  mtu                                       = each.value.mtu                                 
+  enable_ula_internal_ipv6                  = each.value.enable_ula_internal_ipv6                 
+  internal_ipv6_range                       = each.value.internal_ipv6_range                      
+  network_firewall_policy_enforcement_order = each.value.network_firewall_policy_enforcement_order
+  project_id                                = each.value.project_id
+  delete_default_internet_gateway_routes    = each.value.delete_routes
+  #depends_on                                = [ module.project ]
+}
+
+#.....................................Host Project Subnet ....................................#
+
+module "vpc_subnets" {
+  for_each     = {
+    for k, v in try(var.subnets,{}): k => v if v.delete != true
+  }
+  source                                 = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-subnet?ref=v1.0.0"
+  project_id                             = each.value.project_id
+  network_name                           = each.key
+  subnets                                = each.value.subnets
+  secondary_ranges                       = each.value.secondary_ranges
+  #reserved_internal_range                = each.value.reserved_internal_range
+ # purpose                                 = each.value.purpose
+  #role                                    = each.value.role
+  #private_ipv6_google_access             = each.value.private_ipv6_google_access      
+  #stack_type                             = each.value.stack_type                      
+  #ipv6_access_type                       = each.value.ipv6_access_type                
+  #external_ipv6_prefix                   = each.value.external_ipv6_prefix            
+  #allow_subnet_cidr_routes_overlap       = each.value.allow_subnet_cidr_routes_overlap
+  #send_secondary_ip_range_if_empty       = each.value.send_secondary_ip_range_if_empty
+  depends_on                             = [ module.vpc ]
+}
+
+#......................................... Cloud Router ......................................#
+module "router" {
+  for_each                              = {
+    for k, v in try(var.router,{}): k => v if v.delete != true
+  }
+  source                                = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-router?ref=v1.0.0" 
+  router_name                           = each.key 
+  project_id                            = each.value.project_id 
+  region                                = each.value.region 
+  network                               = each.value.network
+  router_description                    = each.value.router_description                  
+  bgp                                   = each.value.bgp                          
+  encrypted_interconnect_router         = each.value.encrypted_interconnect_router
+  depends_on                            = [ module.regional_address ]
+}
+
+
+#......................................... Cloud NAT .........................................#
+
+module "nat" {
+  for_each     = {
+    for k, v in try(var.nat,{}): k => v if v.delete != true
+  }
+  source                                = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-nat?ref=v1.0.0"
+  project_id                            = each.value.project_id 
+  region                                = each.value.region
+  nat_name                              = each.key
+  router_name                           = each.value.router_name 
+  nat_ip_allocate_option                = each.value.nat_ip_allocate_option
+  #initial_nat_ips                       = each.value.initial_nat_ips
+  nat_ips                               = each.value.nat_ips 
+                                          # each.value.nat_ip_allocate_option == "MANUAL_ONLY" ? (
+                                          #  [module.regional_address["network_address"].regional_address_details.self_link]
+                                          #  ) : null
+  drain_nat_ips                         = each.value.drain_nat_ips                       
+  source_subnetwork_ip_ranges_to_nat    = each.value.source_subnetwork_ip_ranges_to_nat 
+  min_ports_per_vm                      = each.value.min_ports_per_vm                    
+  max_ports_per_vm                      = each.value.max_ports_per_vm                    
+  enable_dynamic_port_allocation        = each.value.enable_dynamic_port_allocation      
+  type                                  = each.value.type                                
+  udp_idle_timeout_sec                  = each.value.udp_idle_timeout_sec                
+  icmp_idle_timeout_sec                 = each.value.icmp_idle_timeout_sec               
+  tcp_established_idle_timeout_sec      = each.value.tcp_established_idle_timeout_sec    
+  tcp_transitory_idle_timeout_sec       = each.value.tcp_transitory_idle_timeout_sec     
+  tcp_time_wait_timeout_sec             = each.value.tcp_time_wait_timeout_sec           
+  enable_endpoint_independent_mapping   = each.value.enable_endpoint_independent_mapping 
+  subnetworks                           = each.value.subnetworks
+  endpoint_types                        = each.value.endpoint_types
+  rules                                 = each.value.rules
+  auto_network_tier                     = each.value.auto_network_tier
+  log_config                            = each.value.log_config
+  depends_on                            = [module.router]
+}
+
+#...................................... Global Address .....................................#
+
+module "global_address" {
+  for_each                              = {
+    for k, v in try(var.global_address,{}): k => v if v.delete != true
+  }
+  source                                = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-global_address?ref=v1.0.0"
+  project_id                            = each.value.project_id
+  global_address_type                   = each.value.global_address_type
+  global_address_name                   = each.key
+  global_address_description            = each.value.global_address_description
+  global_address_purpose                = each.value.global_address_purpose
+  global_address_prefix_length          = each.value.global_address_prefix_length
+  global_address_network                = each.value.global_address_network
+  global_address_ip                     = each.value.global_address_ip
+  labels                                = each.value.labels
+}
+
+#...................................... Regional Address .....................................#
+
+module "regional_address" {
+  for_each                              = {
+    for k, v in try(var.regional_address,{}): k => v if v.delete != true
+  }
+  source                                = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-regional-address?ref=v1.0.0"
+  project_id                            = each.value.project_id
+  region                                = each.value.region
+  address_type                          = each.value.address_type
+  address_purpose                       = each.value.address_purpose
+  address_name                          = each.key
+  address_description                   = each.value.address_description
+  network_tier                          = each.value.network_tier
+  address_prefix_length                 = each.value.address_prefix_length
+  address_network                       = each.value.address_network
+  address_subnetwork                    = each.value.address_subnetwork
+  labels                                = each.value.labels 
+  address_ip                            = each.value.address_ip
+  depends_on = [ module.vpc_subnets ]
+}
+
+
+#...................................... Host Project .......................................#
+ 
+module "host_project" {
+  for_each = {
+    for k, v in try(var.host_project,{}): k => v if v.delete != true
+  }
+  source                            = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-host-project?ref=v1.0.0"
+  host_project_id                   = each.key
+}
+ 
+#................................... Service Project .......................................#
+
+module "service_project" {
+  for_each = {
+    for k, v in try(var.service_project,{}): k => v if v.delete != true
+  }
+  source                            = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-service-project?ref=v1.0.0"
+  host_project_id                   = each.value.host_project_id
+  service_project_id                = each.key
+  depends_on                        = [ module.host_project ]
+}
+
+#...................................... Compute Routes .....................................#
+
+module "route" {
+  for_each     = {
+    for k, v in try(var.route,{}): k => v if v.delete != true
+  }
+  source                                 = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-route?ref=v1.0.0"
+  dest_range                             = each.value.dest_range
+  name                                   = each.key
+  network                                = each.value.network
+  description                            = each.value.description
+  priority                               = each.value.priority
+  tags                                   = each.value.tags
+  next_hop_gateway                       = each.value.next_hop_gateway
+  next_hop_instance                      = each.value.next_hop_instance
+  next_hop_ip                            = each.value.next_hop_ip
+  next_hop_vpn_tunnel                    = each.value.next_hop_vpn_tunnel
+  next_hop_ilb                           = each.value.next_hop_ilb
+  project_id                             = each.value.project_id
+  next_hop_instance_zone                 = each.value.next_hop_instance_zone
+  depends_on                             = [ module.vpc ]
+# Code added for workflow triggering
+}
+
+ #....................................... vpc connector....................................#
+module "serverless_vpc_access"  {
+    for_each = {
+     for k, v in var.serverless_vpc_access : k => v if v.delete != true  
+    }
+    source                         = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-vpc-connector?ref=v1.0.0"
+    name                           = each.value.name
+    network                        = each.value.network      
+    ip_cidr_range                  = each.value.ip_cidr_range
+    machine_type                   = each.value.machine_type  
+    min_throughput                 = each.value.min_throughput
+    min_instances                  = each.value.min_instances
+    max_instances                  = each.value.max_instances
+    max_throughput                 = each.value.max_throughput
+    subnet                         = each.value.subnet        
+    region                         = each.value.region        
+    project                        = each.value.project            
+}
+ 

@@ -1,0 +1,370 @@
+# *************************************** Level-2 Folders Configuration ************************************** #      
+ 
+module "Level_2_BU_Folders" {
+  for_each     = {  
+    for k, v in try(var.Level_2_BU_Folders,{}): k => v if v.delete != true            
+  }   
+  source              ="git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0"      
+  folder_name         = each.value.folder_name
+  tags                = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  parent              = data.google_organization.org.id
+
+# code added to trigger workflow
+}
+
+# *********************************** End Level-2 Folders Configuration ************************************** #
+
+# *************************************** Level-3 Folders Configuration ************************************** 
+module "Level_3_us_boot_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_3_us_boot_BU_Folders,{}): k => v if v.delete != true
+  }
+  source       = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0"  
+  folder_name  = each.key
+  parent       = data.google_folder.gcp-boot.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_2_BU_Folders ]
+}
+module "Level_3_us_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_3_us_BU_Folders,{}): k => v if v.delete != true
+  }
+  source       = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0"  
+  folder_name  = each.value.folder_name
+  parent       = module.Level_2_BU_Folders["gcp-us"].folder_details.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_2_BU_Folders ]
+}
+
+
+# **************************************** END Level-3 Configurations *****************************************
+
+# **************************************** Level-4 Configurations *****************************************
+
+module "Level_4_us_dev_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_4_us_dev_BU_Folders,{}): k => v if v.delete != true
+  }
+  source        = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name  = each.key
+  parent       = module.Level_3_us_BU_Folders["gcp-dev-us"].folder_details.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_3_us_BU_Folders ]
+}
+module "Level_4_us_test_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_4_us_test_BU_Folders,{}): k => v if v.delete != true
+  }
+  source        = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name  = each.key
+  parent       = module.Level_3_us_BU_Folders["gcp-test-us"].folder_details.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_3_us_BU_Folders ]
+}
+module "Level_4_us_stg_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_4_us_stg_BU_Folders,{}): k => v if v.delete != true
+  }
+  source        = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name  = each.key
+  parent       = module.Level_3_us_BU_Folders["gcp-stg-us"].folder_details.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_3_us_BU_Folders ]
+}
+module "Level_4_us_prd_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_4_us_prd_BU_Folders,{}): k => v if v.delete != true
+  }
+  source        = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name  = each.key
+  parent       = module.Level_3_us_BU_Folders["gcp-prd-us"].folder_details.id
+  tags         = each.value.tags
+  deletion_protection = each.value.deletion_protection
+  depends_on   = [ module.Level_3_us_BU_Folders ]
+}
+# **************************************** END Level-4 Configurations *****************************************
+#******************************************** Level-5 Configurations ****************************************** #
+
+module "Level_5_us_dev_app_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_dev_app_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_dev_BU_Folders["gcp-d-buapp-shrd-serv-us"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_dev_BU_Folders ]
+}
+
+module "Level_5_us_dev_Sandbox_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_dev_Sandbox_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_dev_BU_Folders["fld-sandboxes"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_dev_BU_Folders ]
+}
+
+module "Level_5_us_test_app_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_test_app_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_test_BU_Folders["gcp-t-buapp-shrd-serv-us"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_test_BU_Folders ]
+}
+module "Level_5_us_stg_app_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_stg_app_BU_Folders,{}): k => v if v.delete != true
+  }
+  
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_stg_BU_Folders["gcp-s-buapp-shrd-serv-us"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_stg_BU_Folders ]
+}
+
+module "Level_5_us_prd_app_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_prd_app_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_prd_BU_Folders["gcp-p-buapp-shrd-serv-us"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_prd_BU_Folders ]
+}
+
+
+
+module "Level_5_us_dev_data_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_dev_data_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_dev_BU_Folders["fld-data-foundation"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_dev_BU_Folders ]
+}
+
+module "Level_5_us_test_data_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_test_data_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_test_BU_Folders["fld-data-foundation"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_test_BU_Folders ]
+}
+
+module "Level_5_us_stg_data_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_stg_data_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_stg_BU_Folders["fld-data-foundation"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_stg_BU_Folders ]
+}
+
+module "Level_5_us_prd_data_BU_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_5_us_prd_data_BU_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_4_us_prd_BU_Folders["fld-data-foundation"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_4_us_prd_BU_Folders ]
+}
+
+#******************************************** End Level-5 Configurations ****************************************** #
+
+
+#******************************************** Level-6 Configurations ****************************************** #
+
+#********************************************** Level-6 DEV Configurations *******************************************
+
+module "Level_6_us_data_Foundation_Sandbox_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_data_Foundation_Sandbox_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.value.folder_name
+  parent                  = module.Level_5_us_dev_data_BU_Folders["fld-sandboxes"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_dev_data_BU_Folders ]
+}
+
+module "Level_6_us_data_Foundation_Business_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_data_Foundation_Business_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_dev_data_BU_Folders["fld-business-data"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_dev_data_BU_Folders ]
+}
+
+module "Level_6_us_data_Foundation_Consumers_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_data_Foundation_Consumers_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_dev_data_BU_Folders["fld-consumers"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_dev_data_BU_Folders ]
+}
+
+#******************************************** End Level-6 DEV Configurations ****************************************** #
+
+#********************************************** Level-6 tst Configurations *******************************************
+
+module "Level_6_us_tst_Foundation_Business_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_tst_data_Foundation_Business_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_test_data_BU_Folders["fld-business-data"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_test_data_BU_Folders ]
+}
+
+module "Level_6_us_tst_data_Foundation_Consumers_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_tst_data_Foundation_Consumers_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_test_data_BU_Folders["fld-consumers"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_test_data_BU_Folders ]
+}
+
+#********************************************** End Level-6 tst Configurations *******************************************
+
+#********************************************** Level-6 stg Configurations *******************************************
+
+module "Level_6_us_stg_data_Foundation_Business_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_stg_data_Foundation_Business_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_stg_data_BU_Folders["fld-business-data"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_stg_data_BU_Folders ]
+}
+
+module "Level_6_us_stg_data_Foundation_Consumers_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_stg_data_Foundation_Consumers_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_stg_data_BU_Folders["fld-consumers"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_stg_data_BU_Folders ]
+}
+
+
+#********************************************** End Level-6 stg Configurations *******************************************
+
+
+#**********************************************  Level-6 PRD Configurations *******************************************
+module "Level_6_us_prd_data_Foundation_Business_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_prd_data_Foundation_Business_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_prd_data_BU_Folders["fld-business-data"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_prd_data_BU_Folders ]
+}
+
+module "Level_6_us_prd_data_Foundation_Consumers_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_6_us_prd_data_Foundation_Consumers_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_5_us_prd_data_BU_Folders["fld-consumers"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_5_us_prd_data_BU_Folders ]
+}
+#********************************************** End Level-6 PRD Configurations *******************************************
+
+
+#******************************************** End Level-6 Configurations ****************************************** #
+
+#******************************************** Start Level-7 Configurations ****************************************** #
+module "Level_7_fld_has_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_7_fld_has_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_6_us_data_Foundation_Sandbox_Folders["fld-has"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_6_us_data_Foundation_Sandbox_Folders ]
+}
+module "Level_7_fld-eda_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_7_fld-eda_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_6_us_data_Foundation_Sandbox_Folders["fld-eda"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_6_us_data_Foundation_Sandbox_Folders ]
+}
+#******************************************** Start Level-8 Configurations ****************************************** #
+module "Level_8_fld-de_Folders" {
+  for_each     = {
+    for k, v in try(var.Level_8_fld-de_Folders,{}): k => v if v.delete != true
+  }
+  source                  = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-folder.git//terraform-google-cloud-folder?ref=v1.0.0" 
+  folder_name             = each.key
+  parent                  = module.Level_7_fld-eda_Folders["fld-de"].folder_details.id
+  tags                    = each.value.tags
+  deletion_protection     = each.value.deletion_protection
+  depends_on              = [ module.Level_7_fld-eda_Folders ]
+}

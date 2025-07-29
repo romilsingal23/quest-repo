@@ -1,0 +1,277 @@
+###############################################
+/*google dns managed zone block started there*/
+###############################################
+
+resource "google_dns_managed_zone" "dns_zone" {
+  visibility  = var.zone_visibility
+  name        = var.name
+  dns_name    = var.dns_name
+  description = var.dns_description
+  labels      = var.labels
+
+  dynamic "dnssec_config" {
+    for_each = var.zone_visibility == "public" ? [1] : []
+    content {
+    kind  = var.dnssec_kind
+    state = var.dnssec_state
+    non_existence = var.dnssec_state == "off" ? var.dnssec_non_existence : null
+    dynamic "default_key_specs" {
+      for_each = var.default_key_specs != null && var.dnssec_state == "off" ? var.default_key_specs : []
+      content {
+        algorithm  = default_key_specs.value.algorithm
+        key_length = default_key_specs.value.key_length
+        key_type   = default_key_specs.value.key_type
+        kind       = default_key_specs.value.kind
+      }
+    }
+  }
+  }
+
+
+  dynamic "private_visibility_config" {
+    for_each = (var.networks != null && length(var.networks) > 0) || (var.gke_clusters != null && length(var.gke_clusters) > 0) ? [1] : []
+    content {
+      dynamic "networks" {
+        for_each = var.networks != null && length(var.networks) > 0 ? var.networks : []
+        content {
+          network_url = networks.value.network_url
+        }
+      }
+
+      dynamic "gke_clusters" {
+        for_each = (var.networks == null || length(var.networks) == 0) && var.gke_clusters != null ? var.gke_clusters : []
+        content {
+          gke_cluster_name = gke_clusters.value.gke_cluster_name
+
+        }
+      }
+    }
+  }
+
+  dynamic "forwarding_config" {
+    for_each = var.forwarding_config[*]
+    content {
+     dynamic "target_name_servers" {
+      for_each = lookup(forwarding_config.value,"target_name_servers",[])
+      #var.forwarding_ipv4_address != null ? [1] : []
+      content{
+          ipv4_address    = lookup(target_name_servers.value,"ipv4_address")
+          forwarding_path = lookup(target_name_servers.value,"forwarding_path")
+      }
+      }
+    }
+  }
+
+  dynamic "peering_config" {
+    for_each = var.peering_network_url != null ? [1] : []
+    content {
+      target_network {
+        network_url = var.peering_network_url
+      }
+    }
+  }
+
+  project       = var.project_id
+  force_destroy = var.force_destroy
+
+  cloud_logging_config {
+    enable_logging = var.enable_logging
+  }
+}
+
+
+
+# # #############################################
+# # /*google dns record set block started there*/
+# # #############################################
+
+resource "google_dns_record_set" "dns_records" {
+  name         = var.record_name
+  managed_zone = var.managed_zone
+  type         = var.record_type
+  ttl          = var.ttl
+  project      = var.project_id
+
+  rrdatas = var.rrdatas 
+  dynamic "routing_policy" {
+    for_each = var.routing_policies != null ? var.routing_policies : []
+    content {
+      dynamic "wrr" {
+        for_each = routing_policy.value.wrr != null ? [1] : []
+        content {
+          weight  = routing_policy.value.wrr.weight
+          rrdatas = var.dnssec_state == "off" || routing_policy.value.wrr.health_checked_targets == null ? routing_policy.value.wrr.rrdatas : null
+
+          dynamic "health_checked_targets" {
+            for_each = routing_policy.value.wrr.health_checked_targets != null && var.rrdatas == null ? [1] : []
+            content {
+              dynamic "internal_load_balancers" {
+                for_each = routing_policy.value.wrr.health_checked_targets.internal_load_balancers != null ? [1] : []
+                content {
+                  load_balancer_type = lookup(internal_load_balancers.value, "load_balancer_type", null)
+                  ip_address         = lookup(internal_load_balancers.value, "ip_address", null)
+                  port               = lookup(internal_load_balancers.value, "port", null)
+                  ip_protocol        = lookup(internal_load_balancers.value, "ip_protocol", null)
+                  network_url        = lookup(internal_load_balancers.value, "network_url", null)
+                  project            = lookup(internal_load_balancers.value, "project", null)
+                  region             = lookup(internal_load_balancers.value, "region", null)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      dynamic "geo" {
+        for_each = routing_policy.value.geo != null ? [1] : []
+        content {
+          location = routing_policy.value.geo.location
+          dynamic "health_checked_targets" {
+            for_each = routing_policy.value.geo.health_checked_targets != null ? [1] : []
+            content {
+              dynamic "internal_load_balancers" {
+                for_each = routing_policy.value.geo.health_checked_targets.internal_load_balancers != null ? [1] : []
+                content {
+                  load_balancer_type = lookup(internal_load_balancers.value, "load_balancer_type", null)
+                  ip_address         = lookup(internal_load_balancers.value, "ip_address", null)
+                  port               = lookup(internal_load_balancers.value, "port", null)
+                  ip_protocol        = lookup(internal_load_balancers.value, "ip_protocol", null)
+                  network_url        = lookup(internal_load_balancers.value, "network_url", null)
+                  project            = lookup(internal_load_balancers.value, "project", null)
+                  region             = lookup(internal_load_balancers.value, "region", null)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      dynamic "primary_backup" {
+        for_each = routing_policy.value.primary_backup != null ? [1] : []
+        content {
+          dynamic "backup_geo" {
+            for_each = routing_policy.value.primary_backup.backup_geo != null ? [1] : []
+            content {
+              location = routing_policy.value.primary_backup.backup_geo.location
+              dynamic "health_checked_targets" {
+                for_each = routing_policy.value.primary_backup.backup_geo.health_checked_targets != null ? [1] : []
+                content {
+                  dynamic "internal_load_balancers" {
+                    for_each = routing_policy.value.primary_backup.backup_geo.health_checked_targets.internal_load_balancers != null ? [1] : []
+                    content {
+                      load_balancer_type = lookup(internal_load_balancers.value, "load_balancer_type", null)
+                      ip_address         = lookup(internal_load_balancers.value, "ip_address", null)
+                      port               = lookup(internal_load_balancers.value, "port", null)
+                      ip_protocol        = lookup(internal_load_balancers.value, "ip_protocol", null)
+                      network_url        = lookup(internal_load_balancers.value, "network_url", null)
+                      project            = lookup(internal_load_balancers.value, "project", null)
+                      region             = lookup(internal_load_balancers.value, "region", null)
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          enable_geo_fencing_for_backups = lookup(routing_policy.value.primary_backup, "enable_geo_fencing_for_backups", false)
+          trickle_ratio                  = lookup(routing_policy.value.primary_backup, "trickle_ratio", null)
+
+          dynamic "primary" {
+            for_each = routing_policy.value.primary_backup.primary != null ? [1] : []
+            content {
+              dynamic "internal_load_balancers" {
+                for_each = routing_policy.value.primary_backup.primary.internal_load_balancers != null ? [1] : []
+                content {
+                  load_balancer_type = lookup(internal_load_balancers.value, "load_balancer_type", null)
+                  ip_address         = lookup(internal_load_balancers.value, "ip_address", null)
+                  port               = lookup(internal_load_balancers.value, "port", null)
+                  ip_protocol        = lookup(internal_load_balancers.value, "ip_protocol", null)
+                  network_url        = lookup(internal_load_balancers.value, "network_url", null)
+                  project            = lookup(internal_load_balancers.value, "project", null)
+                  region             = lookup(internal_load_balancers.value, "region", null)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+resource "google_dns_policy" "dns_policy" {
+  name                      = var.policy_name
+  description               = var.description
+  enable_inbound_forwarding = var.enable_inbound_forwarding
+  enable_logging            = var.policy_enable_logging
+  project                   = var.project_id
+
+  dynamic "alternative_name_server_config" {
+    for_each = var.target_name_servers
+    content {
+      target_name_servers {
+        ipv4_address    = alternative_name_server_config.value.ipv4_address
+        forwarding_path = alternative_name_server_config.value.forwarding_path
+      }
+    }
+  }
+
+  dynamic "networks" {
+    for_each = var.networks
+    content {
+      network_url = networks.value.network_url
+    }
+  }
+}
+
+
+# # #########################################################
+# # /*google google_dns_response_policy block started there*/
+# # #########################################################
+
+# resource "google_dns_response_policy" "response_policy" {
+#   response_policy_name = var.response_policy_name
+#   description          = var.policy_rule_description
+#   project              = local.project_id
+
+#   dynamic "networks" {
+#     for_each = var.policy_rule_networks
+#     content {
+#       network_url = policy_rule_networks.value.network_url
+#     }
+#   }
+
+#   dynamic "gke_clusters" {
+#     for_each = var.policy_rule_gke_clusters
+#     content {
+#       gke_cluster_name = policy_rule_gke_clusters.value.gke_cluster_name
+#     }
+#   }
+# }
+
+# # #########################################################
+# # /*google google_dns_response_policy_rule block started there*/
+# # #########################################################
+
+# resource "google_dns_response_policy_rule" "response_policy_rule" {
+#   response_policy = var.response_policy
+#   rule_name       = var.rule_name
+#   dns_name        = local.domain
+#   project         = local.project_id
+
+#   dynamic "local_data" {
+#     for_each = var.local_data
+#     content {
+#       dynamic "local_datas" {
+#         for_each = local_data.value.local_datas
+#         content {
+#           name    = local_datas.value.name
+#           type    = local_datas.value.type
+#           ttl     = local_datas.value.ttl
+#           rrdatas = local_datas.value.rrdatas
+#         }
+#       }
+#     }
+#   }
+# }

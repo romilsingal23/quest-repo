@@ -157,3 +157,140 @@ resource "google_compute_address" "default" {
   labels        = var.labels
   address       = local.address_type == "INTERNAL" ? var.address_ip : null
 }
+
+resource "google_compute_router" "router" {
+  provider                        = google-beta
+  #count                           = var.create_router == true ? 1 : 0
+  name                            = var.router_name
+  network                         = var.network
+  description                     = var.router_description
+  
+  dynamic "bgp" {
+    for_each                      = var.bgp
+    content {
+      asn                         = bgp.value.asn
+      advertise_mode              = bgp.value.advertise_mode
+      advertised_groups           = bgp.value.advertised_groups
+      dynamic "advertised_ip_ranges" {
+        for_each                  = lookup(bgp.value, "advertised_ip_ranges", [])
+        content {
+          range                   = advertised_ip_ranges.value.range
+          description             = advertised_ip_ranges.value.description
+        }
+      }
+      keepalive_interval          = bgp.value.keepalive_interval
+      identifier_range            = bgp.value.identifier_range
+    }
+  }
+
+  encrypted_interconnect_router   = var.encrypted_interconnect_router
+  region                          = var.region
+  project                         = var.project_id
+}
+
+resource "google_compute_router_nat" "nat" {
+  provider                            = google-beta
+  #count                               = var.create_nat ? 1 : 0
+  project                             = var.project_id
+  region                              = var.region
+  name                                = var.nat_name
+  router                              = var.router_name
+  nat_ip_allocate_option              = var.nat_ip_allocate_option
+  #initial_nat_ips                     = var.initial_nat_ips 
+  nat_ips                             = var.nat_ip_allocate_option == "MANUAL_ONLY" ? var.nat_ips : null
+  drain_nat_ips                       = var.drain_nat_ips 
+  source_subnetwork_ip_ranges_to_nat  = var.source_subnetwork_ip_ranges_to_nat
+  min_ports_per_vm                    = var.min_ports_per_vm
+  max_ports_per_vm                    = var.max_ports_per_vm
+  enable_dynamic_port_allocation      = var.enable_dynamic_port_allocation
+  type                                =var.type
+  udp_idle_timeout_sec                = var.udp_idle_timeout_sec
+  icmp_idle_timeout_sec               = var.icmp_idle_timeout_sec
+  tcp_established_idle_timeout_sec    = var.tcp_established_idle_timeout_sec
+  tcp_transitory_idle_timeout_sec     = var.tcp_transitory_idle_timeout_sec
+  tcp_time_wait_timeout_sec           =var.tcp_time_wait_timeout_sec 
+  enable_endpoint_independent_mapping = var.enable_endpoint_independent_mapping
+  dynamic "subnetwork" {
+    for_each                          = var.subnetworks
+    content {
+      name                            = subnetwork.value.name
+      source_ip_ranges_to_nat         = subnetwork.value.source_ip_ranges_to_nat
+      secondary_ip_range_names        = contains(subnetwork.value.source_ip_ranges_to_nat, "LIST_OF_SECONDARY_IP_RANGES") ? subnetwork.value.secondary_ip_range_names : []
+    }
+  }
+
+  dynamic "log_config" {
+    for_each                          = var.log_config 
+    content {
+      filter                          = log_config.value.filter
+      enable                          = log_config.value.enable
+    }
+  }
+  
+  endpoint_types                      = var.endpoint_types
+  dynamic "rules" {
+    for_each                          = var.rules
+    content {
+      rule_number                     = lookup(rules.value, "rule_number", "")
+      description                     = lookup(rules.value, "description" ,"")
+      match                           = lookup(rules.value, "match" , "")
+      dynamic "action" {
+        for_each = lookup(rules.value, "action" , [])
+        content {
+          source_nat_active_ips       = lookup(action.value, "source_nat_active_ips" , "")
+          source_nat_drain_ips        = lookup(action.value, "source_nat_drain_ips" , "")
+          source_nat_active_ranges    = lookup(action.value, "source_nat_active_ranges" , "")
+          source_nat_drain_ranges     = lookup(action.value, "source_nat_drain_ranges" , "")
+        }
+        
+      }
+    }
+    
+  }
+  auto_network_tier                  = var.auto_network_tier
+}
+
+locals {
+  host_project       = var.host_project_id
+}
+
+resource "google_compute_shared_vpc_host_project" "host_project" {
+  #provider            = google-beta
+  #count              = var.shared_vpc ? 1 : 0
+  project            = local.host_project
+}
+
+locals {
+  host_project       = var.host_project_id
+  service_project    = var.service_project_id
+}
+
+resource "google_compute_shared_vpc_service_project" "service_project" {
+  provider           = google-beta
+  #for_each           = toset(local.service_project)
+  #count              = length(local.service_project)
+  #service_project    = each.key
+  host_project       = local.host_project
+  service_project    = local.service_project
+}
+
+
+resource "google_vpc_access_connector" "name" {
+    name                           = var.name
+    network                        = var.network
+    ip_cidr_range                  = var.ip_cidr_range
+    machine_type                   = var.machine_type
+    min_throughput                 = var.min_throughput
+    min_instances                  = var.min_instances
+    max_instances                  = var.max_instances
+    max_throughput                 = var.max_throughput
+    dynamic "subnet" {
+        for_each = var.subnet
+        content {
+          name                     = lookup(subnet.value, "name" ,"")
+          project_id               = lookup(subnet.value, "project_id" ,"")
+        }
+    }
+    region                         = var.region
+    project                        = var.project
+}

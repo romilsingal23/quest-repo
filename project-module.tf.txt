@@ -1,0 +1,33 @@
+#....................................... Project Config .....................................#
+
+module "project" {
+  for_each     = {
+    for k, v in try(var.projects,{}): k => v if v.delete != true
+  }
+  source                          = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-project.git//terraform-google-cloud-project?ref=v1.0.0"
+  billing_account_id              = data.google_billing_account.billing_account.id
+  project_name                   = each.value.project_name
+  random_suffix                  = each.value.random_suffix
+  project_id                     = each.key
+  folder_id                      = each.value.folder_id
+  auto_create_network            = each.value.auto_create_network
+  labels                         = each.value.labels
+  deletion_policy                = each.value.deletion_policy
+  tags                           = each.value.tags
+}
+
+module "data-project" {
+  for_each     = {
+    for k, v in try(var.data-projects,{}): k => v if v.delete != true
+  }
+  source                          = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-project.git//terraform-google-cloud-project?ref=v1.0.0"
+  billing_account_id              = data.google_billing_account.billing_account.id
+  project_name                   = each.value.project_name
+  random_suffix                  = each.value.random_suffix
+  project_id                     = each.key
+  folder_id                      = each.value.folder_id
+  auto_create_network            = each.value.auto_create_network
+  labels                         = each.value.labels
+  deletion_policy                = each.value.deletion_policy
+  tags                           = each.value.tags
+}

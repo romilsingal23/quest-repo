@@ -1,0 +1,189 @@
+dns_zone = {
+  "dns-glo-pri-zon-gcp" = {
+    delete               = false
+    zone_visibility      = "private"
+    dns_description      = "private DNS zone for GCP domain"
+    dns_name             = "gcp.qdx.com."
+    networks             = [
+      {network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"},
+      {network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-ha-forti"},
+      {network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-management-forti"},
+      {network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"},
+      {network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"}
+      ]
+    labels               = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+    }
+    dnssec_kind          = null
+    dnssec_state         = null
+    dnssec_non_existence = null
+    default_key_specs    = null
+    # gke_clusters         = null
+    # forwarding_config    = null
+    peering_network_url = null
+    force_destroy       = null
+    enable_logging      = false
+    project_id          = "prj-shrd-ntwk-3"
+  },
+  "dns-glo-goo-apis" = {
+    delete               = false
+    zone_visibility      = "private"
+    dns_description      = "Private DNS zone for  Google APIs"
+    dns_name             = "*.googleapis.com."
+    networks             = [
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-ha-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-management-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"}
+      ]
+    labels               = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+    }
+    dnssec_kind          = null
+    dnssec_state         = null
+    dnssec_non_existence = null
+    default_key_specs    = null
+    # gke_clusters         = null
+    # forwarding_config    = null
+    peering_network_url = null
+    force_destroy       = null
+    enable_logging      = false
+    project_id          = "prj-shrd-ntwk-3"
+
+  },
+  "dns-glo-pri-goo-apis" = {
+    delete               = false
+    zone_visibility      = "private"
+    dns_description      = "Private DNS zone for Restricted GoogleAPIS"
+    dns_name             = "private.googleapis.com."
+    networks             = [
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-ha-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-management-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"}
+      ]
+    labels               = {
+
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+    }
+    dnssec_kind          = null
+    dnssec_state         = null
+    dnssec_non_existence = null
+    default_key_specs    = null
+    # gke_clusters         = null
+    # forwarding_config    = null
+    peering_network_url = null
+    force_destroy       = null
+    enable_logging      = false
+    project_id          = "prj-shrd-ntwk-3"
+
+  },
+  "dns-forw-pri-zon-gcp-onprem" = {
+    delete               = false
+    zone_visibility      = "private"
+    dns_description      = "Forwarding Private Zone for On-Prem *.qdx.com  Domain"
+    dns_name             = "*.qdx.com."
+    networks             = [
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-ha-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-management-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"}
+      ]
+    labels               = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+    }
+    dnssec_kind          = null
+    dnssec_state         = null
+    dnssec_non_existence = null
+    default_key_specs    = null
+    # gke_clusters         = null
+    peering_network_url = null
+    force_destroy       = null
+    enable_logging      = false
+    project_id          = "prj-shrd-ntwk-3"
+
+    forwarding_config = [{
+      target_name_servers = [
+        {
+          ipv4_address    = "156.30.233.11",
+          forwarding_path = null
+        },
+        {
+          ipv4_address    = "10.202.0.11",
+          forwarding_path = null
+        }
+      ]
+    }]
+  },
+}
+
+
+
+dns_records = {
+ "dns-rec-goo-apis.*.googleapis.com." = {
+    delete       = false
+    managed_zone = "dns-glo-goo-apis"
+    record_type  = "CNAME"
+    ttl          = 300
+    rrdatas      = ["private.googleapis.com."]
+    project_id   = "prj-shrd-ntwk-3"
+    dnssec_state =null
+
+  },
+ 
+
+  "dns-rec-pri-goo-apis.private.googleapis.com." = {
+    delete       = false
+    managed_zone = "dns-glo-pri-goo-apis"
+    record_type  = "A"
+    ttl          = 300
+    rrdatas      = ["199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"]
+    project_id   = "prj-shrd-ntwk-3"
+    dnssec_state= null
+
+  }
+}
+
+dns_policy = {
+  "dns-inboundpolicy-onprem-gcp" = {
+    delete                    = false
+    project_id                = "prj-shrd-ntwk-3"
+    enable_inbound_forwarding = true
+    policy_enable_logging     = true
+    description        = "Dns Inboundpolicy Onprem gcp policy"
+    policy_networks = [
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-ha-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-hub-management-forti"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-non-prod-shared-host"},
+      { network_url = "https://compute.googleapis.com/compute/v1/projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"}
+    ]
+  }
+}

@@ -1,0 +1,624 @@
+vpc                             = {
+
+# .............. Network HUB Project VPCs Configuration ............. #
+  "vpc-hub-external"                     = {
+    delete                                    = false
+    project_id                                = "prj-shrd-ntwk-3"
+    description                               = "External VPC"
+    routing_mode                              = "GLOBAL"
+    delete_routes                             = true
+    delete_default_internet_gateway_routes    = false
+    auto_create_subnetworks                   = false
+    /* bgp_best_path_selection_mode              = null  */         
+    /* bgp_always_compare_med                    = null  */       
+    /* bgp_inter_region_cost                     = null */
+    mtu                                       = null 
+    enable_ula_internal_ipv6                  = null
+    internal_ipv6_range                       = null
+    network_firewall_policy_enforcement_order = null
+  },
+  
+  "vpc-non-prod-shared-host"                     = {
+    delete                                    = false
+    project_id                                = "prj-shrd-ntwk-3"
+    description                               = "Non Prod Hub-Host Shared VPC"
+    routing_mode                              = "GLOBAL"
+    delete_routes                             = true
+    delete_default_internet_gateway_routes    = false
+    auto_create_subnetworks                   = false
+    /* bgp_best_path_selection_mode              = null  */         
+    /* bgp_always_compare_med                    = null  */       
+    /* bgp_inter_region_cost                     = null */
+    mtu                                       = null 
+    enable_ula_internal_ipv6                  = null
+    internal_ipv6_range                       = null
+    network_firewall_policy_enforcement_order = null
+  },
+  
+  "vpc-prod-shared-host"                     = {
+    delete                                    = false
+    project_id                                = "prj-shrd-ntwk-3"
+    description                               = "Prod Hub-Host Shared VPC"
+    routing_mode                              = "GLOBAL"
+    delete_routes                             = true
+    delete_default_internet_gateway_routes    = false
+    auto_create_subnetworks                   = false
+    /* bgp_best_path_selection_mode              = null  */         
+    /* bgp_always_compare_med                    = null  */       
+    /* bgp_inter_region_cost                     = null */
+    mtu                                       = null 
+    enable_ula_internal_ipv6                  = null
+    internal_ipv6_range                       = null
+    network_firewall_policy_enforcement_order = null
+  },
+
+}
+
+
+
+subnets = {
+  # ************************************* Network HUB Subnets Configuration *********************************** #
+
+  # ................... HUB VPC Subnets Configuration .................. #
+  "vpc-hub-external" = {
+    delete                                     = false
+    project_id                                 = "prj-shrd-ntwk-3"
+    subnets                                    = [
+      {          
+        subnet_name                            = "sub-proxy-np-uw1" 
+        subnet_ip                              = "10.143.1.0/24"
+        subnet_region                          = "us-west1"
+        #reserved_internal_range                = null
+        subnet_private_access                  = false
+        private_ipv6_google_access             = null
+        stack_type                             = null
+        ipv6_access_type                       = null
+        external_ipv6_prefix                   = null
+        allow_subnet_cidr_routes_overlap       = null
+        #send_secondary_ip_range_if_empty       = null
+        subnet_flow_logs                       = false
+        subnet_flow_logs_interval              = "INTERVAL_5_MIN"
+        subnet_flow_logs_sampling              = 1
+        subnet_flow_logs_metadata              = "INCLUDE_ALL_METADATA"
+        subnet_flow_logs_filter_expr           = true,
+        purpose                                = "REGIONAL_MANAGED_PROXY",
+        role                                   = "ACTIVE"
+      }
+    ]
+    secondary_ranges                           = {}
+  },
+
+  "vpc-non-prod-shared-host" = {
+    delete                                     = false
+    project_id                                 = "prj-shrd-ntwk-3"
+    subnets                                    = [
+      {          
+        subnet_name                            = "sub-non-prod-hub-uw1" 
+        subnet_ip                              = "10.142.128.0/28"
+        subnet_region                          = "us-west1"
+        #reserved_internal_range                = null
+        subnet_private_access                  = true
+        private_ipv6_google_access             = null
+        stack_type                             = null
+        ipv6_access_type                       = null
+        external_ipv6_prefix                   = null
+        allow_subnet_cidr_routes_overlap       = null
+        #send_secondary_ip_range_if_empty       = null
+        subnet_flow_logs                       = true
+        subnet_flow_logs_interval              = "INTERVAL_5_MIN"
+        subnet_flow_logs_sampling              = 1
+        subnet_flow_logs_metadata              = "INCLUDE_ALL_METADATA"
+        subnet_flow_logs_filter_expr           = true
+      },
+      {          
+        subnet_name                            = "sn-vpcconnector-cloudrun-stg-ue4" 
+        subnet_ip                              = "10.141.154.0/28"
+        subnet_region                          = "us-east4"
+        #reserved_internal_range               = null
+        subnet_private_access                  = true
+        private_ipv6_google_access             = null
+        stack_type                             = null
+        ipv6_access_type                       = null
+        external_ipv6_prefix                   = null
+        allow_subnet_cidr_routes_overlap       = null
+        #send_secondary_ip_range_if_empty      = null
+        subnet_flow_logs                       = true
+        subnet_flow_logs_interval              = "INTERVAL_5_MIN"
+        subnet_flow_logs_sampling              = 1
+        subnet_flow_logs_metadata              = "INCLUDE_ALL_METADATA"
+        subnet_flow_logs_filter_expr           = true
+      },
+
+    ]
+    secondary_ranges                           = {
+      "sn-ue4-gke-ghrunner-dev-1"              = [
+        {
+          range_name    = "sipr-ue4-ghrunnerpod-dev-1"
+          ip_cidr_range = "100.64.0.0/20"
+        },
+        {
+          range_name    = "sipr-ue4-ghrunnerserv-dev-2"
+          ip_cidr_range = "100.62.0.0/24"
+        },
+      ],
+      "sn-use4-gke-c3ai-dev-01" = [
+        {
+          range_name    = "sipr-use4-gke-c3ai-dev-01"
+          ip_cidr_range = "172.16.0.0/18"
+        },
+        {
+          range_name    = "pipr-use4-gke-c3ai-dev-01"
+          ip_cidr_range = "172.20.0.0/14"
+        }
+      ],
+    }
+
+  },
+
+  "vpc-prod-shared-host" = {
+    delete                                     = false
+    project_id                                 = "prj-shrd-ntwk-3"
+    subnets                                    = [
+      {          
+        subnet_name                            = "sub-prod-hub-uw1" 
+        subnet_ip                              = "10.142.0.0/28"
+        subnet_region                          = "us-west1"
+        #reserved_internal_range                = null
+        subnet_private_access                  = true
+        private_ipv6_google_access             = null
+        stack_type                             = null
+        ipv6_access_type                       = null
+        external_ipv6_prefix                   = null
+        allow_subnet_cidr_routes_overlap       = null
+        #send_secondary_ip_range_if_empty       = null
+        subnet_flow_logs                       = true
+        subnet_flow_logs_interval              = "INTERVAL_5_MIN"
+        subnet_flow_logs_sampling              = 1
+        subnet_flow_logs_metadata              = "INCLUDE_ALL_METADATA"
+        subnet_flow_logs_filter_expr           = true
+      },
+       {          
+        subnet_name                            = "sn-vpcconnector-cloudrun-prd-ue4" 
+        subnet_ip                              = "10.141.6.0/28"
+        subnet_region                          = "us-east4"
+        #reserved_internal_range                = null
+        subnet_private_access                  = true
+        private_ipv6_google_access             = null
+        stack_type                             = null
+        ipv6_access_type                       = null
+        external_ipv6_prefix                   = null
+        allow_subnet_cidr_routes_overlap       = null
+        #send_secondary_ip_range_if_empty       = null
+        subnet_flow_logs                       = true
+        subnet_flow_logs_interval              = "INTERVAL_5_MIN"
+        subnet_flow_logs_sampling              = 1
+        subnet_flow_logs_metadata              = "INCLUDE_ALL_METADATA"
+        subnet_flow_logs_filter_expr           = true
+      },
+    ]
+    secondary_ranges                           = {
+       "sn-ue4-dyn-prd-1"              = [
+        {
+          range_name    = "sn-ue4-dyn-p-sec-1"
+          ip_cidr_range = "100.69.16.0/20"
+        },
+        {
+          range_name    = "sn-ue4-dyn-p-sec-2"
+          ip_cidr_range = "100.69.0.0/24"
+        }
+      ],
+      "sn-ue4-gke-ghrunner-prd-1"              = [
+        {
+          range_name    = "sipr-ue4-ghrunnerpod-prd-1"
+          ip_cidr_range = "100.69.32.0/20"
+        },
+        {
+          range_name    = "sipr-ue4-ghrunnerserv-prd-2"
+          ip_cidr_range = "100.69.1.0/26"
+        }
+      ],
+       "sn-ue4-cribl-prd-1"             = [
+        {
+          range_name    =  "sipr-ue4-criblpod-prd-1"
+          ip_cidr_range = "100.70.16.0/20"
+        },
+        {
+          range_name    = "sipr-ue4-criblserv-prd-1"
+          ip_cidr_range = "100.70.0.0/24"
+        }
+      ]
+    }
+  }
+
+
+  # ************************************ END Network SPOKE Subnets Configuration ********************************** #
+
+nat                                       = {
+  "nat-gw-ext-uw1"               = {
+    delete                                = false
+    project_id                            = "prj-shrd-ntwk-3"
+      region                              = "us-west1"
+      router_name                         = "clr-nat-ext-uw1"
+      nat_ip_allocate_option              = "MANUAL_ONLY"
+      #initial_nat_ips                     = null
+      nat_ips                              = ["projects/prj-shrd-ntwk-3/regions/us-west1/addresses/gcp-uw1-cnat-ip-01"]
+      drain_nat_ips                       = null
+      min_ports_per_vm                    = null
+      max_ports_per_vm                    = null
+      enable_dynamic_port_allocation      = null
+      type                                = null
+      udp_idle_timeout_sec                = null
+      icmp_idle_timeout_sec               = null
+      tcp_established_idle_timeout_sec    = null
+      tcp_transitory_idle_timeout_sec     = null
+      tcp_time_wait_timeout_sec           = null
+      enable_endpoint_independent_mapping = null
+      source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+      subnetworks                         = [
+        /*{
+          name                            = ""
+          source_ip_ranges_to_nat         = ["ALL_IP_RANGES"]
+          secondary_ip_range_names        = null
+        }*/
+      ]
+      log_config = [
+        /*{
+          filter                          = ""
+          enable                          = false
+        }*/
+      ]
+      endpoint_types                      = null
+      rules                               = [
+        /* rule_number                       =
+        description                       =
+        match                             =
+        action                            = [
+          source_nat_active_ips           =
+          source_nat_drain_ips            =
+          source_nat_active_ranges        =
+          source_nat_drain_ranges         =
+        ] */
+      ]
+      auto_network_tier                   = null
+  },
+    "nat-gw-ext-ue4"               = {
+    delete                                = false
+    project_id                            = "prj-shrd-ntwk-3"
+      region                              = "us-east4"
+      router_name                         = "clr-nat-ext-ue4"
+      nat_ip_allocate_option              = "MANUAL_ONLY"
+      #initial_nat_ips                    = null
+      nat_ips                              = ["projects/prj-shrd-ntwk-3/regions/us-east4/addresses/gcp-ue4-cnat-ip-01"]
+      drain_nat_ips                       = null
+      min_ports_per_vm                    = null
+      max_ports_per_vm                    = null
+      enable_dynamic_port_allocation      = null
+      type                                = null
+      udp_idle_timeout_sec                = null
+      icmp_idle_timeout_sec               = null
+      tcp_established_idle_timeout_sec    = null
+      tcp_transitory_idle_timeout_sec     = null
+      tcp_time_wait_timeout_sec           = null
+      enable_endpoint_independent_mapping = null
+      source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+      subnetworks                         = [
+        /*{
+          name                            = ""
+          source_ip_ranges_to_nat         = ["ALL_IP_RANGES"]
+          secondary_ip_range_names        = null
+        }*/
+      ]
+      log_config = [
+        {
+          filter                          = "ALL"
+          enable                          = true
+        }
+      ] 
+      endpoint_types                      = null
+      rules                               = [
+        /* rule_number                       =
+        description                       =
+        match                             =
+        action                            = [
+          source_nat_active_ips           =
+          source_nat_drain_ips            =
+          source_nat_active_ranges        =
+          source_nat_drain_ranges         =
+        ] */
+      ] 
+      auto_network_tier                   = null
+  } 
+}
+
+
+router                      = {
+  "clr-nat-ext-uw1"       = {
+    delete                        = false
+    project_id                    = "prj-shrd-ntwk-3"
+    region                        = "us-west1"
+    network                       = "vpc-hub-external"
+    router_description            = "router for Fortigate Us West"
+    bgp                           = [
+      /* asn                         = 
+      advertise_mode              =
+      advertised_groups           =
+      advertised_ip_ranges        = [
+        range                     =
+        description               =
+      ]
+      keepalive_interval          =
+      identifier_range            = */
+    ]
+    encrypted_interconnect_router = null
+
+  },
+  "clr-nat-ext-ue4"               = {
+    delete                        = false
+    project_id                    = "prj-shrd-ntwk-3"
+    region                        = "us-east4"
+    network                       = "vpc-hub-external"
+    router_description            = "router for Fortigate Us East"
+    bgp                           = [
+      /* asn                         = 
+      advertise_mode              =
+      advertised_groups           =
+      advertised_ip_ranges        = [
+        range                     =
+        description               =
+      ]
+      keepalive_interval          =
+      identifier_range            = */
+    ]
+    encrypted_interconnect_router = null
+
+  } 
+}
+
+regional_address = {
+
+    # .............. Address Reservation for us-west1 Fortigate Configuration ............. #
+      "gcp-uw1-fgt-ext-priv-ip-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-west1"
+        address_type                  = "INTERNAL"
+        address_description           = "Static Internal IP Address for Active FGT Firewall for Node 1"
+        network_tier                  = null
+        address_purpose               = "GCE_ENDPOINT"
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = "sub-external-uw1"
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = "10.143.0.3"
+      },
+   
+      "gcp-uw1-fgt-non-prod-priv-ip-02" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-west1"
+        address_type                  = "INTERNAL"
+        address_description           = "Static Internal IP Address for Passive FGT Firewall for Node 1"
+        network_tier                  = null
+        address_purpose               = "GCE_ENDPOINT"
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = "sub-non-prod-hub-uw1"
+        labels                        = {
+
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = "10.142.128.4"
+      },
+   
+    # ..................................................................................... #
+
+    # .............. Address Reservation for us-east4 Fortigate Configuration ............. #
+      "gcp-ue4-fgt01-ext-ip-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "EXTERNAL"
+        address_description           = "Static External IP Address for FGT Active Firewall1 for us-east4 region "
+        network_tier                  = null
+        address_purpose               = null
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = null
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = null
+      },
+      "gcp-ue4-fgt-ealb-ext-ip-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "EXTERNAL"
+        address_description           = "Static External IP Address for FGT Firewall http load balancer for NON-PROD Workload"
+        network_tier                  = null
+        address_purpose               = null
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = null
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = null
+      },
+      "gcp-ue4-fgt02-non-prod-priv-ip-02" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "INTERNAL"
+        address_description           = "Static Internal IP Address for Passive FGT Firewall for Node 1 for us-east4 region"
+        network_tier                  = null
+        address_purpose               = "GCE_ENDPOINT"
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = "sub-non-prod-hub-ue4"
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = "10.141.128.4"
+      },
+      "gcp-ue4-fgt02-ha-priv-ip-02" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "INTERNAL"
+        address_description           = "Static HA Internal IP Address for Active FGT Firewall for Node 2 for us-east4 region"
+        network_tier                  = null
+        address_purpose               = "GCE_ENDPOINT"
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = "sub-ha-ue4"
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = "10.143.0.115"
+      }
+# ..................................................................................... #
+
+# ............................ Address Reservation for Dynatrace  .................... #
+
+      "gcp-ue4-dynsyn-dev-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "EXTERNAL"
+        address_description           = "Static External IP Address for FGT Firewall http load balancer for NON-PROD Workload"
+        network_tier                  = null
+        address_purpose               = null
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = null
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform_production"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = null
+      },
+     
+     
+# ..................................................................................... #
+
+# ............................ Address Reservation for Dynatrace  .................... #
+
+      "gcp-uw1-cnat-ip-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-west1"
+        address_type                  = "EXTERNAL"
+        address_description           = "Static External IP Address for US West source_ip_ranges_to_nat"
+        network_tier                  = "PREMIUM"
+        address_purpose               = null
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = null
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = null
+      },
+      "gcp-ue4-cnat-ip-01" = {
+        delete                        = false
+        project_id                    = "prj-shrd-ntwk-3"
+        region                        = "us-east4"
+        address_type                  = "EXTERNAL"
+        address_description           = "Static External IP Address for Us-East Cloud NAT"
+        network_tier                  = "PREMIUM"
+        address_purpose               = null
+        address_prefix_length         = null
+        address_network               = null
+        address_subnetwork            = null
+        labels                        = {
+            appserviceid    = "snsvc0005368"
+            appservicename  = "google_cloud_platform"
+            timestamp       = "2024-11-22t13-29-35z"
+            iac             = "terraform"
+            datatype        = "tbd"
+            costcenter      = "tbd"
+            tierid          ="tier_1"
+        },
+        address_ip                    = null
+      }
+
+}
+
+####################################Global Address Reservation###########################################
+
+global_address = {
+  "psa-cidr-non-prod-us-west1" = {
+    delete                        = false
+    project_id                    = "prj-shrd-ntwk-3" 
+    global_address_type           = "INTERNAL"
+    global_address_description    = null
+    global_address_purpose        = "VPC_PEERING"
+    global_address_prefix_length  = 24
+    global_address_network        = "vpc-non-prod-shared-host"
+    global_address_ip             = "10.142.255.0"
+    labels ={}
+  },
+  "psa-cidr-non-prod-us-east4" = {
+    delete                        = false
+    project_id                    = "prj-shrd-ntwk-3" 
+    global_address_type           = "INTERNAL"
+    global_address_description    = null
+    global_address_purpose        = "VPC_PEERING"
+    global_address_prefix_length  = 24
+    global_address_network        = "vpc-non-prod-shared-host"
+    global_address_ip             = "10.141.255.0"
+    labels ={}                   
+  },
+}
+
+

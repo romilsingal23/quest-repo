@@ -1,0 +1,60 @@
+#...................................... DNS Managed zone .......................................#
+
+module "dns_zone" {
+  for_each = {
+    for k, v in try(var.dns_zone, {}) : k => v if v.delete != true
+  }
+  source               = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-dns.git//terraform-google-cloud-dns-zone?ref=v1.0.0"
+  project_id           = each.value.project_id
+  zone_visibility      = each.value.zone_visibility
+  name                 = each.key
+  dns_description      = each.value.dns_description
+  dns_name             = each.value.dns_name
+  labels               = each.value.labels
+  dnssec_kind          = each.value.dnssec_kind
+  dnssec_state         = each.value.dnssec_state
+  dnssec_non_existence = each.value.dnssec_non_existence
+  default_key_specs    = each.value.default_key_specs
+  networks             = try(each.value.networks, [])
+  gke_clusters         = try(each.value.gke_clusters, [])
+  forwarding_config    = try(each.value.forwarding_config, [])
+  peering_network_url  = try(each.value.peering_network_url, "")
+  force_destroy        = each.value.force_destroy
+  enable_logging       = each.value.enable_logging
+}
+#...................................... dns record set .....................................#
+
+
+module "dns_records" {
+  for_each = {
+    for k, v in try(var.dns_records, {}) : k => v if v.delete != true
+  }
+  source           = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-dns.git//terraform-google-cloud-dns-records?ref=v1.0.0"
+  record_name      = each.key
+  record_type      = each.value.record_type
+  ttl              = each.value.ttl
+  managed_zone     = each.value.managed_zone
+  rrdatas          = each.value.rrdatas
+  project_id       = each.value.project_id
+  dnssec_state = each.value.dnssec_state
+  routing_policies = try(each.value.routing_policies, null)
+  depends_on = [ module.dns_zone ]
+}
+
+# #...................................... DNS Policy .......................................#
+
+module "dns_policy" {
+  for_each = {
+    for k, v in try(var.dns_policy, {}) : k => v if v.delete != true
+  }
+  source                    = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-dns.git//terraform-google-cloud-dns-policy?ref=v1.0.0"
+  project_id                = each.value.project_id
+  policy_name               = each.key
+  description        = each.value.description
+  enable_inbound_forwarding = each.value.enable_inbound_forwarding
+  policy_enable_logging     = each.value.policy_enable_logging
+
+  target_name_servers = try(each.value.target_name_servers, [])
+  networks            = each.value.policy_networks
+  depends_on = [ module.dns_zone ]
+}
