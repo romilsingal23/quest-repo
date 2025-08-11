@@ -1,0 +1,129 @@
+name: 'Terraform IAC Pipeline' 
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+    
+    paths:
+      - 'terraform-google-cloud-folder-orgpolicy/**'
+
+  workflow_dispatch: 
+env:
+  PROJECT_ID: 'prj-boot-iac-us-1'
+  PROJECT_NO: 974223802243
+  SA_NAME: 'id-sa-boot-iac-us-4000'
+  
+permissions:
+      contents: 'read'
+      id-token: 'write'
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+ 
+jobs:
+  init:
+    runs-on: gcp-arc-rsd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+        
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig  
+
+      - name: Terraform Init (Emulation)
+        run: |
+          cd ${{ github.workspace }}/terraform-google-cloud-folder-orgpolicy
+          terraform init
+          terraform fmt
+          terraform validate
+
+  TF-lint:
+    runs-on: gcp-arc-rsd
+    needs: init
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update Git Config 
+        env:
+          GH_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXDSOSandboxOrg/".insteadOf "https://github.com/QDXDSOSandboxOrg/"  
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com".insteadOf "https://github.com"    
+          cat ~/.gitconfig
+          
+      - name: Run TFLint
+        env:
+          TFLINT_LOG: DEBUG
+        run: |
+           cd ${{ github.workspace }}/terraform-google-cloud-folder-orgpolicy
+           tflint --init
+           tflint --var-file=folder.tfvars --var-file=orgpolicy.tfvars 
+
+  Wiz-scan:
+    needs: TF-lint
+    uses: QDXEnterpriseOrg/qdx-reusable-workflows/.github/workflows/wiz-scan-iac.yaml@main
+    secrets: inherit
+    permissions: write-all
+
+  plan:
+    runs-on: gcp-arc-rsd
+    needs: Wiz-scan
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: auth
+        uses: google-github-actions/auth@v2.0.0
+        with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/${{env.PROJECT_NO}}/locations/global/workloadIdentityPools/github/providers/github'
+          service_account: '${{env.SA_NAME}}@${{env.PROJECT_ID}}.iam.gserviceaccount.com'
+
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GHAPP_REPO_ACCESS_APP_ID }}
+          private-key: ${{ secrets.GHAPP_REPO_ACCESS_APP_KEY }}
+          owner: QDXEnterpriseOrg
+ 
+      - name: Update Git Config 
+        env: 
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: | 
+          git config --global url."https://${{github.actor}}:${{env.GH_TOKEN}}@github.com/QDXEnterpriseOrg/".insteadOf "https://github.com/QDXEnterpriseOrg/"    
+          cat ~/.gitconfig  
+
+      - name: Terraform Plan
+        run: |
+          cd ${{ github.workspace }}/terraform-google-cloud-folder-orgpolicy
+          terraform init -reconfigure 
+          terraform plan -var-file=folder.tfvars -var-file=orgpolicy.tfvars  -lock=false

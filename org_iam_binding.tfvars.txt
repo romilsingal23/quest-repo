@@ -1,0 +1,81 @@
+org_iam                                           = {
+    "roles/browser"                      = {
+        delete                                    = "false"
+        org_id                                    = "302491745572"
+        members                                   = [
+            "serviceAccount:sa-cspm-falcon-org@prj-shrd-secu-5.iam.gserviceaccount.com",
+            "group:gcp-devops@questdiagnostics.com","group:gcp-organization-viewers@questdiagnostics.com",
+            "user:deepakpandhari.x.yadav@questdiagnostics.com",
+            "user:epuri.x.bhavana@questdiagnostics.com","user:eric.h.choi@questdiagnostics.com","user:lik.x.kwan@questdiagnostics.com",
+            "user:manimoorthy.x.balu@questdiagnostics.com","user:romil.x.singal@questdiagnostics.com","user:sameer.x.wadhwa@questdiagnostics.com",
+            "user:scott.b.chapin@questdiagnostics.com","serviceAccount:wiz3b092d76d84233639af50370c21@prod-us1-300113.iam.gserviceaccount.com",
+            
+
+        ]
+        condition                                 = [
+            /* {
+                title                             = ""
+                description                       = ""
+                expression                        = "" 
+            } */
+        ]
+    },
+    "roles/cloudasset.viewer"                      = {
+        delete                                    = "false"
+        org_id                                    = "302491745572"
+        members                                   = [
+            "serviceAccount:sa-cspm-falcon-org@prj-shrd-secu-5.iam.gserviceaccount.com",
+            "serviceAccount:wiz3b092d76d84233639af50370c21@prod-us1-300113.iam.gserviceaccount.com"
+        ]
+        condition                                 = [
+            /* {
+                title                             = ""
+                description                       = ""
+                expression                        = "" 
+            } */
+        ]
+    },
+    "roles/compute.viewer"                      = {
+        delete                                    = "false"
+        org_id                                    = "302491745572"
+        members                                   = [
+            "serviceAccount:sa-cspm-falcon-org@prj-shrd-secu-5.iam.gserviceaccount.com",
+            "user:ravi.x.upadhayay@questdiagnostics.com",
+        ]
+        condition                                 = [
+            /* {
+                title                             = ""
+                description                       = ""
+                expression                        = "" 
+            } */
+        ]
+    },
+    "roles/datastream.viewer"                      = {
+        delete                                    = "false"
+        org_id                                    = "302491745572"
+        members                                   = [
+            "serviceAccount:sa-cspm-falcon-org@prj-shrd-secu-5.iam.gserviceaccount.com"
+        ]
+        condition                                 = [
+            /* {
+                title                             = ""
+                description                       = ""
+                expression                        = "" 
+            } */
+        ]
+    },
+    "roles/securitycenter.adminViewer"                      = {
+        delete                                    = "false"
+        org_id                                    = "302491745572"
+        members                                   = [
+            "serviceAccount:sa-cspm-falcon-org@prj-shrd-secu-5.iam.gserviceaccount.com"
+        ]
+        condition                                 = [
+            /* {
+                title                             = ""
+                description                       = ""
+                expression                        = "" 
+            } */
+        ]
+    },
+}

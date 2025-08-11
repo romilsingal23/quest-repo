@@ -1,0 +1,384 @@
+# org_policy.tfvarsfalse
+org_policy                          = {
+    "compute.vmExternalIpAccess"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = []
+        list_policy                     = [
+            {
+                allow                   = []
+                deny                    = [
+                    {
+                        all             = true
+                        values          = null
+                    }
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            }
+        ]
+        restore_policy                  = [
+            
+        ]
+    },
+    "compute.skipDefaultNetworkCreation"            = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = false
+            }
+        ]
+        list_policy                     = [
+        ]
+        restore_policy                  = [
+           
+        ]
+    },
+    "compute.trustedImageProjects"  = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = []
+        list_policy                     = [
+            {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = [
+                            "projects/prj-ospacker-useast-dev-23295"
+                        ]
+                    }
+                ]
+                deny                    = [ ]
+                suggested_value         = null
+                inherit_from_parent     = true
+            }
+        ]
+        restore_policy                  = [ ]
+    },
+    "compute.restrictPartnerInterconnectUsage"  = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+         
+        ]
+        list_policy                     = [
+            {
+                allow                   = [
+                    {
+                        all             = true
+                        values          = null
+                    }
+                ]
+                deny                    = [
+               
+                ]
+                suggested_value         = null
+                inherit_from_parent     = true
+            }
+        ]
+        restore_policy                  = [
+           
+        ]
+    },
+    "iam.automaticIamGrantsForDefaultServiceAccounts"  = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+           
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "gcp.restrictCmekCryptoKeyProjects"  = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+          
+        ]
+        list_policy                     = [
+            {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = [
+                            "projects/prj-key-mgt-dev-20334", "projects/prj-shrd-secu-5","projects/prj-key-mgt-tst-20334","projects/prj-key-mgt-stg-20334","projects/prj-key-mgt-prd-20334","projects/prj-shrd-secu-us-8"
+                        ]
+                    }
+                ]
+                deny                    = [
+               
+                ]
+                suggested_value         = null
+                inherit_from_parent     = true
+            }
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "gcp.restrictNonCmekServices"  = {
+        delete                          = true
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+         
+        ]
+        list_policy                     = [
+            {
+                allow                   = []
+                deny                    = [
+                    {
+                        all             = null
+                        values          = [
+                            "compute.googleapis.com"
+                        ]
+                    }
+                ]
+                suggested_value         = null
+                inherit_from_parent     = false
+            }
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "gcp.resourceLocations"    = {
+        delete                          = true
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+         
+        ]
+        list_policy                     = [
+            {
+                allow                   = [
+                    {
+                        all             = true
+                        values          = null
+                        # 8/11 - Removing location constraint as per Scott's email
+                        # all             = null
+                        # values          = ["in:us-west1-locations","in:us-east4-locations"]
+                    }
+                ]
+                deny                    = [
+            
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            }
+        ]
+        restore_policy                  = [
+         
+        ]
+    },
+    "compute.skipDefaultNetworkCreation"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+           
+        ]
+        restore_policy                  = [
+           
+        ]
+    },
+    "storage.uniformBucketLevelAccess"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+        
+        ]
+        restore_policy                  = [
+            
+        ]
+    },
+    "compute.restrictXpnProjectLienRemoval"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+        
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "compute.restrictDedicatedInterconnectUsage"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+          
+        ]
+        list_policy                     = [
+             {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = ["projects/prj-shrd-ntwk-3/global/networks/vpc-hub-external"]
+                    }
+                ]
+                deny                    = [
+                   
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            } 
+        ]
+        restore_policy                  = [
+         
+        ]
+    },
+    "compute.restrictSharedVpcHostProjects"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+        
+        ]
+        list_policy                     = [
+             {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = ["projects/prj-shrd-ntwk-3"]
+                    }
+                ]
+                deny                    = [
+                
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            } 
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "sql.restrictPublicIp"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+          
+        ]
+        restore_policy                  = [
+        ]
+    },
+    "compute.disableSerialPortAccess"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+          
+        ]
+        restore_policy                  = [
+         
+        ]
+    },
+    "compute.allowedVlanAttachmentEncryption"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+           
+        ]
+        list_policy                     = [
+             {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = ["IPSEC"]
+                    }
+                ]
+                deny                    = [
+                 
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            } 
+        ]
+        restore_policy                  = [
+            
+        ]
+    },
+    "essentialcontacts.disableProjectSecurityContacts"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+            {
+                enforced                = true
+            }
+        ]
+        list_policy                     = [
+           
+        ]
+        restore_policy                  = [
+          
+        ]
+    },
+    "storage.softDeletePolicySeconds"    = {
+        delete                          = false
+        org_id                          = "302491745572"
+        version                         = 0
+        boolean_policy                  = [
+        ]
+        list_policy                     = [
+            {
+                allow                   = [
+                    {
+                        all             = null
+                        values          = ["604800"]
+                    }
+                ]
+                deny                    = [
+                ]
+                suggested_value         = null
+                inherit_from_parent     = null
+            }
+        ]   
+        restore_policy                  = [
+          
+        ]
+    },
+}
