@@ -21,6 +21,7 @@ regedit.exe /s C:\Temp\vulrem\Disable_Weak_Ciphers.reg
 regedit.exe /s C:\Temp\vulrem\DisableAutoLogon.reg
 regedit.exe /s C:\Temp\vulrem\MSORemote.reg
 regedit.exe /s C:\Temp\vulrem\Disable_SMB_Signing_Require.reg
+regedit.exe /s C:\Temp\vulrem\WinVerifyTrust.reg
  
 REM Run BAT file
 start /wait C:\Temp\vulrem\Activate_QID-91462.bat
