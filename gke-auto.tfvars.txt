@@ -1,0 +1,318 @@
+cluster = {
+  "cluster1" = {
+            delete  = false
+            name               = "gkeap-dtrace-useast-prd"  
+            location           = "us-east4"
+            deletion_protection = false
+            node_locations      = ["us-east4-a","us-east4-b","us-east4-c"]
+            random_suffix       = true
+            addons_config       = [
+              {
+              http_load_balancing = [
+                {
+                disabled = false
+                }
+              ]
+              horizontal_pod_autoscaling = [
+                {
+                disabled = false
+                }
+              ]
+              network_policy_config = []
+              dns_cache_config = []
+              
+              gcp_filestore_csi_driver_config = [
+                {
+                enabled = false
+                }
+              ]
+              gce_persistent_disk_csi_driver_config = [
+                {
+                enabled = true
+                }
+              ]
+              config_connector_config = [
+                {
+                enabled = false
+                }
+              ]
+              gke_backup_agent_config = [
+                {
+                enabled = false
+                }
+              ]
+              gcs_fuse_csi_driver_config = [
+                {
+                enabled = true
+                }
+              ]
+              cloudrun_config = [
+                {
+                disabled = true
+                load_balancer_type = null
+                }
+              ]
+
+              stateful_ha_config =[]
+              ray_operator_config = [
+                {
+                enabled = false
+                ray_cluster_logging_config = [
+                  {
+                  enabled  = false
+                  }
+                ]
+                 ray_cluster_monitoring_config = [
+              {
+                  enabled = false
+              }
+                 ]
+                }
+              ]
+              }
+           ]
+            network             = "projects/prj-shrd-ntwk-3/global/networks/vpc-prod-shared-host"
+            subnetwork          = "projects/prj-shrd-ntwk-3/regions/us-east4/subnetworks/sn-ue4-dyn-prd-1"
+            allow_net_admin     = true
+            cluster_ipv4_cidr   = null
+            datapath_provider   = null
+            project_id          = "prj-dynatrace-useast-prd-90634"
+            node_pool_defaults = [/*
+              {
+                node_config_defaults = [
+                  {
+                    # insecure_kubelet_readonly_port_enabled = "FALSE"
+                     logging_variant = null
+                      gcfs_config = [
+                        {
+                          enabled = false
+                        }
+                      ] 
+                  }
+                ]
+              }
+            */]
+            additional_pod_ranges_config = []
+            release_channel     = []
+            gateway_api_config  = []
+            cost_management_config  = []
+            resource_usage_export_config = [ ]
+            confidential_nodes      = []
+            default_snat_status     = []
+           cluster_autoscaling     = []
+            binary_authorization    = [
+              {
+                enabled = false
+                evaluation_mode = "DISABLED"
+              } ]
+            identity_service_config = [ {
+                enabled = false
+            }
+            ]
+            ip_allocation_policy  = []
+            maintenance_policy = [
+            {
+            recurring_window = [ {
+              start_time = "2025-06-20T04:00:00Z"
+              end_time   = "2025-06-20T10:00:00Z"
+              recurrence = "FREQ=WEEKLY;BYDAY=SA,SU"
+            }
+            ]
+            daily_maintenance_window = []
+            maintenance_exclusion = []
+            }
+            ]
+            default_max_pods_per_node = null
+            enable_k8s_beta_apis = [ {
+              enabled_apis = []
+            }
+            ]
+            default_max_pods_per_node = null
+            enable_k8s_beta_apis = [ {
+              enabled_apis = []
+            }
+            ]
+            enable_tpu = false
+            enable_legacy_abac = false
+            enable_shielded_nodes = null   
+            enable_kubernetes_alpha = false
+            networking_mode = "VPC_NATIVE"
+            resource_labels =  {
+                                appserviceid    = "snsvc0005368"
+                                appservicename  = "google_cloud_platform_production"
+                                timestamp        = "2025-02-19t15-41-00z"
+                                iac             = "terraform"
+                                datatype        = "tbd"
+                                costcenter      = "tbd"
+                                tierid          ="tier_1"
+            }
+            enable_intranode_visibility = null  
+            enable_l4_ilb_subsetting = false
+            enable_multi_networking = false
+            private_ipv6_google_access = null
+            enable_cilium_clusterwide_network_policy = false
+            remove_default_node_pool = null
+            logging_service  = null
+            monitoring_service = null
+            enable_autopilot = true
+            initial_node_count = 1
+             ip_allocation_policy  = [
+              {
+            cluster_secondary_range_name = "sn-ue4-dyn-p-sec-1"
+            services_secondary_range_name = "sn-ue4-dyn-p-sec-2"
+            services_ipv4_cidr_block = null
+            cluster_ipv4_cidr_block = null
+            stack_type = null
+            additional_pod_ranges_config =  []
+              }
+            ]
+              node_pool_auto_config = [
+                  {  
+                    resource_manager_tags = null
+                        network_tags = [{
+                          tags = ["us-east4"]
+                  }]
+                        node_kubelet_config = [{
+                        insecure_kubelet_readonly_port_enabled = "FALSE"
+                    } ] 
+                    }
+                  ]
+            master_auth = [ {
+              client_certificate_config = [ {
+                issue_client_certificate = false
+              }
+              ]
+            }
+            ]
+            logging_config = []
+            monitoring_config = []
+            security_posture_config = [ ]
+            vertical_pod_autoscaling = [ {
+              enabled = true   
+            }
+            ]
+            fleet = [ ]
+            service_external_ips_config = [ {
+              enabled = false
+            }
+            ]
+            mesh_certificates = [ {
+              enable_certificates = false
+            }
+            ]
+
+            database_encryption = []
+            dns_config = [ {
+             # additive_vpc_scope_dns_domain  = null
+              cluster_dns = null
+              cluster_dns_scope =  null
+              cluster_dns_domain =  null
+            }
+            ]
+            master_authorized_networks_config = [ {
+                cidr_blocks = [
+                /*{
+                  cidr_block  = "10.141.128.32/27"
+                  display_name  = "dyn-vm-access"
+                  private_endpoint_enforcement_enabled = false
+                },
+                 {
+                  cidr_block  = "10.141.1.0/25"
+                  display_name  = "dyn-vm-access-2"
+                  private_endpoint_enforcement_enabled = false
+                },*/
+                 {
+                  cidr_block  = "10.141.1.0/25"
+                  display_name  = "dyn-prd-jump-sevrer"
+                  private_endpoint_enforcement_enabled = false
+                }
+                ]
+                gcp_public_cidrs_access_enabled = false
+                }
+           ]
+            recurring_window = []
+
+            daily_maintenance_window = []
+
+            maintenance_exclusion = []
+
+            network_policy = []
+            node_pool = [ ]
+            notification_config = []
+             workload_identity_config = []
+             workload_identity_config = [ {
+          	  workload_pool = "prj-dynatrace-useast-prd-90634.svc.id.goog"
+            }
+            ]
+              private_cluster_config = [ {
+              enable_private_nodes = true
+              enable_private_endpoint = true
+              master_ipv4_cidr_block = "10.141.128.32/27"
+              private_endpoint_subnetwork = "sn-ue4-dyn-prd-1"
+              master_global_access_config = [{
+                enabled = true
+              }
+              ]
+   } ]
+            authenticator_groups_config   = []
+
+            node_config  = [ {
+                  disk_size_gb                            = 100
+                  disk_type                               = "pd-standard"
+                  enable_confidential_storage             = false
+                  ephemeral_storage_local_ssd_config  = []
+                  fast_socket = [ {
+                            enabled                             = false
+                  }]
+                  local_nvme_ssd_block_config = []
+                  logging_variant      = null
+                  secondary_boot_disks = []
+                        image_type                              = "COS_CONTAINERD"
+                          labels                                  = {
+                               appserviceid    = "snsvc0005368"
+                                appservicename  = "google_cloud_platform_production"
+                                timestamp        = "2025-02-19t15-42-00z"
+                                iac             = "terraform"
+                                datatype        = "tbd"
+                                costcenter      = "tbd"
+                                tierid          ="tier_1"
+                          }
+                        resource_labels                         = {
+                                appserviceid    = "snsvc0005368"
+                                appservicename  = "google_cloud_platform_production"
+                                timestamp        = "2025-02-19t15-42-00z"
+                                iac             = "terraform"
+                                datatype        = "tbd"
+                                costcenter      = "tbd"
+                                tierid          ="tier_1"
+                        }
+                        local_ssd_count                         = 2
+                        machine_type                            = "e2-standad-8"
+                        metadata                                = {}
+                        min_cpu_platform                        = null
+                        oauth_scopes                            = []
+                        preemptible                             = false
+                        reservation_affinity =  []
+                        spot                                    = null
+                        boot_disk_kms_key                       = "projects/prj-shrd-secu-5/locations/us-east4/keyRings/kr-dynatrace-prod/cryptoKeys/key-dynatrace-prod-ue4"
+                        service_account                         =  null
+                        shielded_instance_config = [ {
+                            enable_secure_boot                  = false
+                            enable_integrity_monitoring         = false
+                        }]
+                        tags                                    = "us-east4"
+                        resource_manager_tags                   = {}
+                        taint  = []
+                         workload_metadata_config =  [/*{
+                            mode                                =  "GKE_METADATA"
+                        }*/]
+                        kubelet_config = []
+                      linux_node_config = []
+                        node_group                              = null
+                        sole_tenant_config = []
+                      advanced_machine_features = []
+            }]
+
+            node_config  = []
+  }
+}

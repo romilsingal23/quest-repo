@@ -1,0 +1,78 @@
+#................................................... Autoscaler .................................................#
+
+resource "google_compute_autoscaler" "autoscaler" {
+    provider                    = google-beta
+    project                     = var.project_id
+    description                 = var.autoscaler_description                 
+    name                        = var.autoscaler_name
+    zone                        = var.zone
+    target                      = var.target #google_compute_instance_group_manager.mig.id
+    autoscaling_policy {
+        min_replicas            = var.min_replicas
+        max_replicas            = var.max_replicas
+        cooldown_period         = var.cooldown_period
+        mode                    = var.mode
+        dynamic "scale_down_control" {
+            for_each = var.scale_down_control == null ? [] : [""]
+            content {
+                dynamic "max_scaled_down_replicas" {
+                    for_each = lookup(scale_down_control.value, "max_scaled_down_replicas" , "")
+                    content {
+                        fixed   =lookup(max_scaled_down_replicas.values, "fixed" ,"")
+                        percent =lookup(max_scaled_down_replicas.values, "percent" ,"")
+                    }
+                }
+                time_window_sec = lookup(scale_down_control.value , "time_window_sec" , "")
+            }
+        }
+        dynamic "scale_in_control" {
+            for_each = var.scale_in_control == null ? [] : [""]
+            content {
+                dynamic "max_scaled_in_replicas" {
+                    for_each = lookup(scale_in_control.value, "max_scaled_in_replicas" , "")
+                    content {
+                    fixed   =lookup(max_scaled_in_replicas.values, "fixed" ,"")
+                    percent =lookup(max_scaled_in_replicas.values, "percent" ,"")
+                    }
+                }
+                time_window_sec = lookup(scale_in_control.value , "time_window_sec" , "")
+            }
+        }
+        dynamic "cpu_utilization" {
+            for_each =  var.cpu_utilization == null ? [] : [""]
+            content {
+                target  = var.cpu_utilization.target
+                predictive_method = var.cpu_utilization.predictive_method
+            }
+        }
+        dynamic "metric" {
+            for_each = var.metric == null ? [] : [""]
+            content {
+                name                       = var.metric.name                     
+                single_instance_assignment = var.metric.single_instance_assignment
+                target                     = var.metric.target              
+                type                       = var.metric.type                       
+                filter                     = var.metric.filter
+            }  
+        }
+        dynamic "load_balancing_utilization" {
+            for_each = var.load_balancing_utilization == null ? [] : [""]
+            content {
+                target = lookup(load_balancing_utilization.value, "target" , "" )
+            }
+        }    
+        dynamic "scaling_schedules" {
+            for_each = var.scaling_schedules == null ? [] : [""]
+            content {
+                name                  = lookup(scaling_schedules.value , "name" ,"")
+                min_required_replicas = lookup(scaling_schedules.value , "min_required_replicas" ,"")
+                schedule              = lookup(scaling_schedules.value , "schedule" ,"")
+                time_zone             = lookup(scaling_schedules.value , "time_zone" ,"")
+                duration_sec          = lookup(scaling_schedules.value , "duration_sec" ,"")
+                disabled              = lookup(scaling_schedules.value , "disabled" ,"")
+                description           = lookup(scaling_schedules.value , "description" ,"")
+            }
+        }   
+    }
+
+}

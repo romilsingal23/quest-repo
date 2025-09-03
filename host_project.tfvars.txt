@@ -1,0 +1,180 @@
+host_project                          = {
+  "prj-shrd-ntwk-3"      = {
+    delete                            = false
+  }
+}
+ 
+service_project = {
+   "prj-ghrunner-useast-dev-63055"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-shrd-dev-67236"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-shrd-tst-67236"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-shrd-stg-67236"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-shrd-prd-67236"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-app-dev-38661"     = {
+    delete                            = true
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-bus-dev-68801"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-int-dev-33915"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-prt-dev-41155"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-raw-dev-48699"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cus-qaw-dev-66576"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-dynatrace-useast-dev-75825"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-dynatrace-useast-prd-90634"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-ghrunner-useast-prd-37185"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-ospacker-useast-dev-23295"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cribl-useast-dev-10494"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cribl-useast-prd-49360"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-devsecops-sandbox-1"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-raw-tst-48699"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-prt-tst-41155"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-int-tst-33915"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-bus-tst-68801"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cus-qaw-tst-66576"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-raw-prd-48699"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-prt-prd-41155"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-int-prd-33915"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-bus-prd-68801"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cus-qaw-prd-66576"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-raw-stg-48699"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-prt-stg-41155"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-int-stg-33915"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-qadp-bus-stg-68801"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-cus-qaw-stg-66576"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-snow-useast-dev-1-72358"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-snow-useast-prd-81061"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },  
+  "prj-c3ai-dev-29531"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-ldp-raw-dev-63416"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-eda-ldp-int-dev-92744"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },  
+  "prj-protegrity-dev-81093"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+  "prj-shrd-lkr-dev-18075"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },  
+  "prj-protegrity-prd-81093"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+    "prj-shrd-tbu-dev-90424"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+    "prj-sdx-accelerator-81323"     = {
+    delete                            = false
+    host_project_id                   = "prj-shrd-ntwk-3"
+  },
+}

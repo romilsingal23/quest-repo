@@ -1,0 +1,98 @@
+#...................................................... MIG .....................................................#
+
+resource "google_compute_instance_group_manager" "mig" {
+    provider                    = google-beta
+    base_instance_name          = var.base_instance_name
+    version   {
+          name                      = var.mig_version_name
+          instance_template         = var.instance_template #google_compute_instance_template.default.self_link_unique
+          # dynamic "target_size" {
+          #   for_each = var.mig_target_size == null ? [] : [""]
+          #   content {
+          #     fixed   = lookup(target_size.value, "fixed" , "")
+          #     percent = lookup(target_size.value, "percent" , "")
+          #   }
+          # }
+    }   
+    name                        = var.mig_name
+    zone                        = var.zone
+    description                 = var.mig_description
+    dynamic "named_port" {
+        for_each = var.named_port == null ? [] : [""]
+        content {
+            name                    = lookup(named_port.value, "name" , "")
+            port                    = lookup(named_port.value , "port" , "")
+        }
+    }
+    project                     = var.project_id
+    #target_size = var.target_size
+    list_managed_instances_results = var.list_managed_instances_results
+    target_pools = var.target_pools
+    wait_for_instances = var.wait_for_instances
+    wait_for_instances_status = var.wait_for_instances_status
+    dynamic"auto_healing_policies" {
+        for_each = var.auto_healing_policies == null ? [] : [""]
+        content {
+          health_check            =var.auto_healing_policies.health_check#google_compute_region_health_check.healthcheck.id
+          initial_delay_sec       =var.auto_healing_policies.initial_delay_sec
+        }   
+    }
+    dynamic "all_instances_config" {
+        for_each = var.all_instances_config == null ? [] : [""]
+        content {
+          metadata = lookup(all_instances_config.value, "metadata" , "")
+          labels =  lookup(all_instances_config.value ,"lables" , "")
+        }
+    }
+    dynamic "standby_policy" {
+      for_each = var.standby_policy == null ? [] : [""]
+      content {
+        initial_delay_sec = lookup(standby_policy.value, "initial_delay_sec" , "")
+        mode              = lookup(standby_policy.value, "mode" , "")
+      }
+    }
+    target_suspended_size = var.target_suspended_size
+    target_stopped_size = var.target_stopped_size
+    dynamic "stateful_disk" {
+      for_each = var.stateful_disk == null ? [] : [""]
+      content {
+        device_name = lookup(stateful_disk.value, "device_name" , "")
+        delete_rule = lookup(stateful_disk.value, "delete_rule" , "") 
+      }
+    }
+    dynamic "stateful_internal_ip" {
+      for_each = var.stateful_internal_ip == null ? [] : [""]
+      content {
+        interface_name = lookup(stateful_internal_ip.value, "interface_name" , "")
+        delete_rule    = lookup(stateful_internal_ip.value, "delete_rule" , "")
+      }
+    }
+
+    dynamic "stateful_external_ip" {
+      for_each = var.stateful_external_ip == null ? [] : [""]
+      content {
+        interface_name = lookup(stateful_external_ip.value, "interface_name" , "")
+        delete_rule    = lookup(stateful_external_ip.value, "delete_rule" , "")
+      }  
+    }
+    dynamic "update_policy" {
+      for_each = var.update_policy == null ? [] : [""]
+      content {
+        minimal_action                 =lookup(update_policy.value, "minimal_action" , "")
+        most_disruptive_allowed_action =lookup(update_policy.value, "most_disruptive_allowed_action" , "")
+        type                           =lookup(update_policy.value, "type" , "")
+        max_surge_fixed                =lookup(update_policy.value, "max_surge_fixed" , "")
+        max_surge_percent              =lookup(update_policy.value, "max_surge_percent" , "")
+        max_unavailable_fixed          =lookup(update_policy.value, "max_unavailable_fixed" , "")
+        max_unavailable_percent        =lookup(update_policy.value, "max_unavailable_percent" , "")
+        min_ready_sec                  =lookup(update_policy.value, "min_ready_sec" , "")
+        replacement_method             =lookup(update_policy.value, "replacement_method" , "")
+      }
+    }
+    dynamic "params" {
+      for_each = var.params == null ? [] : [""]
+      content {
+        resource_manager_tags = lookup(params.value, "resource_manager_tags" , "")
+      }
+    }
+}

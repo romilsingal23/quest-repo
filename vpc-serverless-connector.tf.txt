@@ -1,0 +1,19 @@
+ #....................................... NCC Spoke....................................#
+module "serverless_vpc_access"  {
+    for_each = {
+     for k, v in var.serverless_vpc_access : k => v if v.delete != true  
+    }
+    source                         = "git::https://github.com/QDXEnterpriseOrg/dso-gcpfoundation-iac-module-network.git//terraform-google-cloud-vpc-connector?ref=v1.0.0"
+    name                           = each.value.name
+    network                        = each.value.network      
+    ip_cidr_range                  = each.value.ip_cidr_range
+    machine_type                   = each.value.machine_type  
+    min_throughput                 = each.value.min_throughput
+    min_instances                  = each.value.min_instances
+    max_instances                  = each.value.max_instances
+    max_throughput                 = each.value.max_throughput
+    subnet                         = each.value.subnet        
+    region                         = each.value.region        
+    project                        = each.value.project            
+}
+ 

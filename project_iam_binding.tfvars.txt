@@ -1,0 +1,56 @@
+project_iam_binding = {
+  "roles/compute.networkUser" = {
+        project_id = "prj-shrd-ntwk-3"
+        delete     = false
+        role       = ["roles/compute.networkUser" ]  # Provide role as a list to match `for_each` requirement.
+        members    = [
+            "serviceAccount:865276656676@cloudservices.gserviceaccount.com","serviceAccount:service-865276656676@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "serviceAccount:951153395534@cloudservices.gserviceaccount.com","serviceAccount:service-951153395534@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "serviceAccount:139527806265@cloudservices.gserviceaccount.com","serviceAccount:service-139527806265@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "serviceAccount:139527806265@cloudservices.gserviceaccount.com","serviceAccount:service-139527806265@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "serviceAccount:1067188442658@cloudservices.gserviceaccount.com","serviceAccount:service-1067188442658@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "group:gcp-devops@questdiagnostics.com","group:gcp-eda-cmt-agentspaceadmin-dev@questdiagnostics.com","serviceAccount:1011480721268-compute@developer.gserviceaccount.com",
+            "serviceAccount:1011480721268@cloudservices.gserviceaccount.com","serviceAccount:1067188442658@cloudservices.gserviceaccount.com",
+            "serviceAccount:139527806265@cloudservices.gserviceaccount.com","serviceAccount:185822012946@cloudservices.gserviceaccount.com",
+            "serviceAccount:190136910392-compute@developer.gserviceaccount.com","serviceAccount:314412805934-compute@developer.gserviceaccount.com",
+            "serviceAccount:314412805934@cloudservices.gserviceaccount.com","serviceAccount:489994834820@cloudservices.gserviceaccount.com",
+            "serviceAccount:536489131919@cloudservices.gserviceaccount.com","serviceAccount:666061291470@cloudservices.gserviceaccount.com",
+            "serviceAccount:818543139006@cloudservices.gserviceaccount.com","serviceAccount:94827527054-compute@developer.gserviceaccount.com",
+            "serviceAccount:94827527054@cloudservices.gserviceaccount.com","serviceAccount:951153395534@cloudservices.gserviceaccount.com",
+            "serviceAccount:id-sa-boot-iac-us-4000@prj-boot-iac-us-1.iam.gserviceaccount.com","serviceAccount:id-sa-prd-boot-iac-us-4000@prj-boot-iac-us-1.iam.gserviceaccount.com",
+            "serviceAccount:sa-ospacker-us-4002@prj-ospacker-useast-dev-23295.iam.gserviceaccount.com","serviceAccount:sa-use4-qadp-raw-dataflow-dev@prj-eda-qadp-raw-dev-48699.iam.gserviceaccount.com",
+            "serviceAccount:sa-use4-qadp-raw-dataflow-prd@prj-eda-qadp-raw-prd-48699.iam.gserviceaccount.com","serviceAccount:sa-use4-qadp-raw-dataflow-stg@prj-eda-qadp-raw-stg-48699.iam.gserviceaccount.com",
+            "serviceAccount:sa-use4-qadp-raw-dataflow-tst@prj-eda-qadp-raw-tst-48699.iam.gserviceaccount.com","serviceAccount:sa-use4-qaw-cus-cloudrun@prj-cus-qaw-dev-66576.iam.gserviceaccount.com",
+            "serviceAccount:service-100364005181@dataflow-service-producer-prod.iam.gserviceaccount.com","serviceAccount:service-1065196648688@dataflow-service-producer-prod.iam.gserviceaccount.com",
+            "serviceAccount:service-1067188442658@gcp-sa-vpcaccess.iam.gserviceaccount.com","serviceAccount:service-139527806265@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+            "serviceAccount:service-185822012946@gcp-sa-vpcaccess.iam.gserviceaccount.com","serviceAccount:service-190136910392@container-engine-robot.iam.gserviceaccount.com",
+            "serviceAccount:service-314412805934@compute-system.iam.gserviceaccount.com","serviceAccount:service-314412805934@container-engine-robot.iam.gserviceaccount.com",
+            "serviceAccount:service-476093664680@dataflow-service-producer-prod.iam.gserviceaccount.com","serviceAccount:service-476093664680@gcp-sa-datastream.iam.gserviceaccount.com",
+            "serviceAccount:service-536489131919@container-engine-robot.iam.gserviceaccount.com","serviceAccount:service-62303430598@compute-system.iam.gserviceaccount.com",
+            "serviceAccount:service-62303430598@container-engine-robot.iam.gserviceaccount.com","serviceAccount:service-666061291470@container-engine-robot.iam.gserviceaccount.com",
+            "serviceAccount:service-818543139006@dataflow-service-producer-prod.iam.gserviceaccount.com","serviceAccount:service-865276656676@serverless-robot-prod.iam.gserviceaccount.com",
+            "serviceAccount:service-94827527054@gcp-sa-aiplatform.iam.gserviceaccount.com","serviceAccount:service-94827527054@gcp-sa-notebooks.iam.gserviceaccount.com",
+            "serviceAccount:service-951153395534@gcp-sa-vpcaccess.iam.gserviceaccount.com","user:deepakpandhari.x.yadav@questdiagnostics.com",
+            "user:jay.x.shah@questdiagnostics.com","user:likhith.x.m@questdiagnostics.com","user:raghuveer.v.lakkavaram@questdiagnostics.com","user:rajasekhar.x.meka@questdiagnostics.com",
+            "user:sameer.x.wadhwa@questdiagnostics.com","user:scott.b.chapin@questdiagnostics.com",
+            "serviceAccount:1038930617958@cloudservices.gserviceaccount.com","serviceAccount:627506587206@cloudservices.gserviceaccount.com","serviceAccount:966187883242@cloudservices.gserviceaccount.com",
+           "serviceAccount:sa-use4-bpdp-raw-dataflow@prj-fin-bpdp-raw-dev-56743.iam.gserviceaccount.com",
+           "serviceAccount:service-1038930617958@dataflow-service-producer-prod.iam.gserviceaccount.com",
+           "serviceAccount:service-966187883242@gcp-sa-vpcaccess.iam.gserviceaccount.com",
+           "serviceAccount:sa-use4-ldp-int-dfcsbq@prj-eda-ldp-int-dev-92744.iam.gserviceaccount.com",
+           "serviceAccount:service-489994834820@dataflow-service-producer-prod.iam.gserviceaccount.com",
+                ]
+          },
+  "roles/compute.networkAdmin" = {
+    project_id = "prj-shrd-ntwk-3"
+    delete     = false
+    role       = ["roles/compute.networkAdmin"]  # Provide role as a list to match `for_each` requirement.
+    members    = [
+#      "serviceAccount:service-476093664680@gcp-sa-datastream.iam.gserviceaccount.com",
+#      "serviceAccount:service-1065196648688@gcp-sa-datastream.iam.gserviceaccount.com",
+#      "serviceAccount:service-818543139006@gcp-sa-datastream.iam.gserviceaccount.com",
+#      "serviceAccount:service-1038930617958@gcp-sa-datastream.iam.gserviceaccount.com",
+      "group:gcp-ms-network-admins@questdiagnostics.com",
+    ]
+  },
+} 

@@ -1,0 +1,29 @@
+resource "google_project_service" "gcp_apis" {
+  for_each                   = toset(var.gcp_apis_list)
+  project                    = var.project_id
+  service                    = each.key
+  disable_on_destroy         = var.disable_apis_on_destroy
+  disable_dependent_services = var.disable_dependent_apis
+}
+
+locals {
+  project_org_id    = var.folder_id != "" ? null : var.org_id
+  project_folder_id = var.folder_id != "" ? var.folder_id : null
+}
+
+resource "random_integer" "random-suffix" {
+min = var.min
+max = var.max
+}
+
+resource "google_project" "project" {
+  name                = var.random_suffix == true?("${var.project_name}-${resource.random_integer.random-suffix.result}"):var.project_name
+  project_id          = var.random_suffix == true?("${var.project_id}-${resource.random_integer.random-suffix.result}"):var.project_id
+  org_id              = local.project_org_id
+  folder_id           = local.project_folder_id
+  billing_account     = var.billing_account_id
+  auto_create_network = var.auto_create_network
+  labels              = var.labels
+  tags                = var.tags
+  deletion_policy     = var.deletion_policy
+}

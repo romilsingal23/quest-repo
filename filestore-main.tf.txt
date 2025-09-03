@@ -1,0 +1,26 @@
+resource "google_filestore_instance" "filestore_instance" {
+  name        = var.filestore_name
+  description = var.instance_description
+  project     = var.project_id
+  location    = var.zone
+  tier        = var.tier
+  protocol    = var.protocol
+  networks {
+    network = var.networks.name
+    modes   = [var.networks.modes]
+    connect_mode      = var.networks.connect_mode
+    reserved_ip_range = var.networks.reserved_ip_range
+  }
+  dynamic "file_shares" {
+    for_each = var.file_shares
+    content {
+    name          = file_shares.value.name
+    capacity_gb   = file_shares.value.capacity_gb
+    nfs_export_options {
+      ip_ranges   = file_shares.value.nfs_export_options.ip_ranges
+      access_mode = file_shares.value.nfs_export_options.access_mode
+      squash_mode = file_shares.value.nfs_export_options.squash_mode
+    }
+  }
+}
+}
